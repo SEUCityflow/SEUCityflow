@@ -174,6 +174,20 @@ public class Vehicle {
         return false;
     }
 
+    public boolean hasDeadlock() {
+        Vehicle fastPointer = this;
+        Vehicle slowPointer = this;
+        while (fastPointer != null && fastPointer.getCurBlocker() != null) {
+            slowPointer = slowPointer.getCurBlocker();
+            fastPointer = fastPointer.getCurBlocker().getCurBlocker();
+            if (slowPointer == fastPointer) { // foeVehicle 存在死锁
+                // deadlock detected
+                return true; // foeVehicle 死锁不可动，当前 Vehicle 通行
+            }
+        }
+        return false;
+    }
+
     // 自身 set / get
     public VehicleInfo getVehicleInfo() {
         return vehicleInfo;
