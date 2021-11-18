@@ -1,5 +1,6 @@
 package entity.roadNet.roadNet;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class LaneLink extends Drivable{
@@ -7,36 +8,47 @@ public class LaneLink extends Drivable{
     private Lane startLane;
     private Lane endLane;
     private List<Cross> crosses;
+
     public LaneLink() {
-
-    }
-    public Road getRoadLink() {
-        return null;
-    }
-    public RoadLinkType getRoadLinkType()  {
-        return null;
-    }
-    public List<Cross> getCrosses()  {
-        return null;
-    }
-    public Lane getStartLane()  {
-        return null;
-    }
-    public Lane getEndLane()  {
-        return null;
-    }
-    public boolean isAvailable()  {
-        return false;
-    }
-    public boolean isTurn()  {
-        return false;
-    }
-    public void reset() {
-
+        super();
+        crosses = new ArrayList<Cross>();
+        drivableType = DrivableType.LANELINK;
     }
 
     @Override
     public String getId() {
-        return null;
+        return (startLane != null ? startLane.getId() : "") + "_TO_" + (endLane != null ? endLane.getId() : "");
+    }
+
+    public RoadLink getRoadLink() {
+        return roadLink;
+    }
+
+    public RoadLinkType getRoadLinkType()  {
+        return roadLink.getType();
+    }
+
+    public List<Cross> getCrosses()  {
+        return crosses;
+    }
+
+    public Lane getStartLane()  {
+        return startLane;
+    }
+
+    public Lane getEndLane()  {
+        return endLane;
+    }
+
+    public boolean isAvailable()  {
+        return roadLink.isAvailable();
+    }
+
+    public boolean isTurn()  {
+        return roadLink.isTurn();
+    }
+
+    public void reset() {
+        super.reset();
     }
 }
