@@ -2,37 +2,8 @@ package entity.roadNet.trafficLight;
 
 import entity.roadNet.roadNet.Intersection;
 
+import java.util.ArrayList;
 import java.util.List;
-
-class LightPhase {
-    private int phase;
-    private double time;
-    private List<Boolean> roadLinkAvailable;
-
-    public int getPhase() {
-        return phase;
-    }
-
-    public void setPhase(int phase) {
-        this.phase = phase;
-    }
-
-    public double getTime() {
-        return time;
-    }
-
-    public void setTime(double time) {
-        this.time = time;
-    }
-
-    public List<Boolean> getRoadLinkAvailable() {
-        return roadLinkAvailable;
-    }
-
-    public void setRoadLinkAvailable(List<Boolean> roadLinkAvailable) {
-        this.roadLinkAvailable = roadLinkAvailable;
-    }
-}
 
 public class TrafficLight {
     private Intersection intersection;
@@ -41,35 +12,51 @@ public class TrafficLight {
     private double remainDuration;
     private int curPhaseIndex;
 
-    public void init(int initPhaseIndex) {
+    public TrafficLight() {
+        phases = new ArrayList<LightPhase>();
+        roadLinkIndices = new ArrayList<Integer>();
+    }
 
+    public void init(int initPhaseIndex) { // 设定当前信号灯 phase
+        if (intersection.isVirtual()) {
+            return;
+        }
+        curPhaseIndex = initPhaseIndex;
+        remainDuration = phases.get(initPhaseIndex).getTime();
     }
 
     public int getCurrentPhaseIndex() {
-        return 0;
+        return curPhaseIndex;
     }
 
     public LightPhase getCurrentPhase() {
-        return null;
+        return phases.get(curPhaseIndex);
     }
 
     public Intersection getIntersection() {
-        return null;
+        return intersection;
     }
 
     public List<LightPhase> getPhases() {
-        return null;
+        return phases;
     }
 
-    public void passTime(double seconds) {
-
+    public void passTime(double seconds) { // 时间过了 seconds
+        if (intersection.isVirtual()) {
+            return;
+        }
+        remainDuration -= seconds;
+        while (remainDuration <= 0.0) {
+            curPhaseIndex = (curPhaseIndex + 1) % (int)phases.size();
+            remainDuration += phases.get(curPhaseIndex).getTime();
+        }
     }
 
     public void setPhase(int phaseIndex) {
-
+        curPhaseIndex = phaseIndex;
     }
 
     public void reset() {
-
+        init(0);
     }
 }
