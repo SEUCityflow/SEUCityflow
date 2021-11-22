@@ -1,9 +1,17 @@
 package entity.roadNet.roadNet;
 
+import com.alibaba.fastjson.*;
+import entity.roadNet.trafficLight.LightPhase;
+import static util.JsonRelate.*;
+
+import entity.roadNet.trafficLight.TrafficLight;
+
+import static util.Point.*;
+
+import java.util.*;
+
 import util.Point;
 
-import java.util.List;
-import java.util.Map;
 
 public class RoadNet {
     private List<Road> roads;
@@ -11,12 +19,200 @@ public class RoadNet {
     private Map<String, Road> roadMap;
     private Map<String, Intersection> interMap;
     private Map<String, Drivable> drivableMap;
-    private List<Lane> lanes;;
+    private List<Lane> lanes;
     private List<LaneLink> laneLinks;
-    private List<Drivable> drivables;
+//    private List<Drivable> drivables;
+    private Set<Drivable> drivables;
+    private static final Map<String, RoadLinkType> typeMap = new HashMap<>();
 
-    public boolean loadFromJson(String jsonFileName)  {
-        return false;
+    static {
+        typeMap.put("turn_left", RoadLinkType.turn_left);
+        typeMap.put("turn_right", RoadLinkType.turn_right);
+        typeMap.put("go_straight", RoadLinkType.go_straight);
+    }
+
+
+    public RoadNet() {
+        roads = new ArrayList<>();
+        intersections = new ArrayList<>();
+        roadMap = new HashMap<>();
+        interMap = new HashMap<>();
+        drivableMap = new HashMap<>();
+        lanes = new ArrayList<>();
+        laneLinks = new ArrayList<>();
+//        drivables = new ArrayList<>();
+        drivables = new HashSet<>();
+    }
+
+    private void loadPoints(JSONArray pointValues, List<Point> points) throws Exception {
+        for (int p = 0; p < pointValues.size(); p++) {
+            JSONObject curPoint = pointValues.getJSONObject(p);
+            double x = getDoubleFromJsonObject(curPoint, "x");
+            double y = getDoubleFromJsonObject(curPoint, "y");
+            points.add(new Point(x, y));
+        }
+    }
+
+    private void loadLaneLinks(JSONObject object, LaneLink laneLink) throws Exception {
+        JSONArray pointValues = getJsonMemberArray(object, "points");
+        if (pointValues.size() != 0) {
+            loadPoints(pointValues, laneLink.getPoints());
+        } else {
+            laneLink.setPoints(calLaneLinkPoints(laneLink.getStartLane(), laneLink.getEndLane()));
+        }
+        laneLink.setLength(getLengthOfPoints(laneLink.getPoints()));
+        drivableMap.put(laneLink.getId(), laneLink);
+    }
+
+    private void loadRoadLinks(JSONObject object, RoadLink roadLink) throws Exception {
+        roadLink.setType(typeMap.get(getStringFromJsonObject(object, "type")));
+        roadLink.setStartRoad(roadMap.get(getStringFromJsonObject(object, "startRoad")));
+        roadLink.setEndRoad(roadMap.get(getStringFromJsonObject(object, "endRoad")));
+        JSONArray laneLinkValues = getJsonMemberArray(object, "laneLinks");
+        for (int i = 0; i < laneLinkValues.size();i++) {
+            LaneLink laneLink = new LaneLink();
+            roadLink.getLaneLinks().add(laneLink);
+            JSONObject curLaneLink = laneLinkValues.getJSONObject(i);
+            Lane startLane = roadLink.getStartRoad().getLanes().get(getIntFromJsonObject(curLaneLink, "startLaneIndex"));
+            Lane endLane = roadLink.getEndRoad().getLanes().get(getIntFromJsonObject(curLaneLink, "endLaneIndex"));
+            laneLink.setStartLane(startLane);
+            laneLink.setEndLane(endLane);
+            laneLink.setRoadLink(roadLink);
+            loadLaneLinks(curLaneLink, laneLink);
+        }
+    }
+
+    private void loadLightPhase(JSONObject object, LightPhase lightPhase) throws Exception {
+        lightPhase.setTime(getDoubleFromJsonObject(object, "time"));
+        JSONArray availableRoadLinkValues = getJsonMemberArray(object, "availableRoadLinks");
+        for (int i = 0; i < availableRoadLinkValues.size(); i++) {
+            int indexInRoadLinks = getIntFromJsonArray(availableRoadLinkValues, i);
+            lightPhase.getRoadLinkAvailable().set(indexInRoadLinks, true);
+        }
+    }
+
+    private void loadTrafficLight(JSONObject object, TrafficLight trafficLight) throws Exception {
+        JSONArray lightPhaseValues = getJsonMemberArray(object, "lightphases");
+        for (int i = 0; i < lightPhaseValues.size(); i++) {
+            JSONObject curLightPhase = lightPhaseValues.getJSONObject(i);
+            LightPhase lightPhase = new LightPhase();
+            trafficLight.getPhases().add(lightPhase);
+            for (int j = 0; j <= trafficLight.getIntersection().getRoadLinks().size(); j++) {
+                lightPhase.getRoadLinkAvailable().add(false);
+            }
+            loadLightPhase(curLightPhase, lightPhase);
+        }
+        trafficLight.init(0);
+    }
+
+    private void loadIntersection(JSONObject object, Intersection intersection) throws Exception {
+        // point
+        JSONObject curPoint = getJsonMemberObject(object, "point");
+        double x = getDoubleFromJsonObject(curPoint, "x");
+        double y = getDoubleFromJsonObject(curPoint, "y");
+        intersection.setPoint(new Point(x, y));
+        // roads
+        JSONArray curRoadValues = getJsonMemberArray(object, "roads");
+        for (int i = 0; i < curRoadValues.size(); i++) {
+            String roadName = getStringFromJsonArray(curRoadValues, i);
+            roads.add(roadMap.get(roadName));
+        }
+        // isVirtual
+        intersection.setVirtual(getBooleanFromJsonObject(object, "virtual"));
+        if (intersection.isVirtual()) {
+            return;
+        }
+        // read width
+        intersection.setWidth(getDoubleFromJsonObject(object, "width"));
+        // roadLinks
+        JSONArray roadLinkValues = getJsonMemberArray(object, "roadLinks");
+        for (int i = 0; i < roadLinkValues.size(); i++) {
+            JSONObject curRoadLink = roadLinkValues.getJSONObject(i);
+            RoadLink roadLink = new RoadLink();
+            intersection.getRoadLinks().add(roadLink);
+            roadLink.setIndex(i);
+            roadLink.setIntersection(intersection);
+            loadRoadLinks(curRoadLink, roadLink);
+            intersection.getLaneLinks().addAll(roadLink.getLaneLinks());
+        }
+        // trafficLight
+        TrafficLight trafficLight = new TrafficLight();
+        intersection.setTrafficLight(trafficLight);
+        trafficLight.setIntersection(intersection);
+        JSONObject trafficLightValue = getJsonMemberObject(object, "trafficLight");
+        loadTrafficLight(trafficLightValue, trafficLight);
+    }
+
+    private void loadRoads(JSONObject object, Road road) throws Exception {
+        road.setStartIntersection(interMap.get(getStringFromJsonObject(object, "startIntersection")));
+        road.setEndIntersection(interMap.get(getStringFromJsonObject(object, "endIntersection")));
+        JSONArray laneValues = getJsonMemberArray(object, "lanes");
+        // lanes
+        for (int i = 0; i < laneValues.size(); i++) {
+            JSONObject curLaneValue = laneValues.getJSONObject(i);
+            double width = getDoubleFromJsonObject(curLaneValue, "width");
+            double maxSpeed = getDoubleFromJsonObject(curLaneValue, "maxSpeed");
+            road.getLanes().add(new Lane(width, maxSpeed, i, road));
+        }
+        for (Lane lane : road.getLanes()) {
+            drivableMap.put(lane.getId(), lane);
+        }
+        // points
+        JSONArray pointValues = getJsonMemberArray(object, "points");
+        loadPoints(pointValues, road.getPoints());
+    }
+
+    public void buildMapping(JSONArray intersectionValues, JSONArray roadValues) throws Exception {
+        for (int i = 0; i < intersectionValues.size(); i++) {
+            JSONObject curInterValue = intersectionValues.getJSONObject(i);
+            Intersection intersection = new Intersection();
+            intersections.add(intersection);
+            String id = getStringFromJsonObject(curInterValue, "id");
+            interMap.put(id, intersection);
+            intersection.setId(id);
+        }
+        for (int i = 0; i < roadValues.size(); i++) {
+            JSONObject curRoadValue = roadValues.getJSONObject(i);
+            Road road = new Road();
+            roads.add(road);
+            String id = getStringFromJsonObject(curRoadValue, "id");
+            roadMap.put(id, road);
+            road.setId(id);
+        }
+    }
+
+    public boolean loadFromJson(String jsonFileName) throws Exception {
+        String json = readJsonData("D:\\java\\JsonTest\\src\\main\\resources\\roadnet.json");
+        JSONObject jsonObject = JSONObject.parseObject(json);
+        JSONArray intersectionValues = getJsonMemberArray(jsonObject, "intersections");
+        JSONArray roadValues = getJsonMemberArray(jsonObject, "roads");
+        buildMapping(intersectionValues, roadValues);
+        //roads
+        for (int i = 0; i < roadValues.size(); i++) {
+            JSONObject curRoadValue = roadValues.getJSONObject(i);
+            Road road = roads.get(i);
+            loadRoads(curRoadValue, road);
+        }
+        // intersections
+        for (int i = 0; i < intersectionValues.size(); i++) {
+            JSONObject curInterValue = intersectionValues.getJSONObject(i);
+            Intersection intersection = intersections.get(i);
+            loadIntersection(curInterValue, intersection);
+        }
+
+        for (Intersection intersection: intersections) {
+            intersection.initCrosses();
+            laneLinks.addAll(intersection.getLaneLinks());
+            drivables.addAll(intersection.getLaneLinks());
+        }
+        for (Road road: roads) {
+            //road.buildSegmentationByInterval();
+            lanes.addAll(road.getLanes());
+            drivables.addAll(road.getLanes());
+            road.initLanePoints();
+        }
+
+        return true;
     }
 
     // public rapidjson::Value convertToJson(rapidjson::Document::AllocatorType allocator)
@@ -49,9 +245,9 @@ public class RoadNet {
         return laneLinks;
     }
 
-    public List<Drivable> getDrivables()  {
-        return drivables;
-    }
+//    public List<Drivable> getDrivables()  {
+//        return drivables;
+//    }
 
     public void reset() {
         for (Road road : roads) {
@@ -60,5 +256,19 @@ public class RoadNet {
         for (Intersection intersection : intersections) {
             intersection.reset();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "RoadNet{" +
+                "roads=" + roads.size() +
+                ", intersections=" + intersections.size() +
+                ", roadMap=" + roadMap.size() +
+                ", interMap=" + interMap.size() +
+                ", drivableMap=" + drivableMap.size() +
+                ", lanes=" + lanes.size() +
+                ", laneLinks=" + laneLinks.size() +
+                ", drivables=" + drivables.size() +
+                '}';
     }
 }
