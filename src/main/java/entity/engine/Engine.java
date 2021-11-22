@@ -1,18 +1,22 @@
 package entity.engine;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import entity.flow.Flow;
+import entity.flow.Route;
 import entity.roadNet.roadNet.Drivable;
 import entity.roadNet.roadNet.Intersection;
 import entity.roadNet.roadNet.Road;
 import entity.roadNet.roadNet.RoadNet;
 import entity.vehicle.vehicle.Vehicle;
+import entity.vehicle.vehicle.VehicleInfo;
 import javafx.util.Pair;
 import util.Barrier;
+import static util.JsonRelate.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
+
+import static util.JsonRelate.readJsonData;
 
 class ThreadControl implements Runnable {
     private Barrier startBarrier;
@@ -103,15 +107,77 @@ public class Engine {
     private double cumulativeTravelTime;
     private Random rnd;
 
-    private boolean loadRoadNet(String jsonFile) {
+    private boolean loadRoadNet(String jsonFile) throws Exception {
+        roadNet.loadFromJson(jsonFile);
         return true;
     }
 
-    private boolean loadFlow(String jsonFilename) {
+    private boolean loadFlow(String jsonFileName) throws Exception {
+        String json = readJsonData(jsonFileName);
+        JSONArray flowValues = JSONObject.parseArray(json);
+        for (int i = 0; i < flowValues.size(); i++) {
+            JSONObject curFlowValue = flowValues.getJSONObject(i);
+            Flow flow = new Flow();
+            flows.add(flow);
+            flow.setId("flow_" + i);
+            // vehicle
+            JSONObject curVehicle = getJsonMemberObject(curFlowValue, "vehicle");
+            VehicleInfo vehicleInfo = flow.getVehicleTemplate();
+            vehicleInfo.len = getDoubleFromJsonObject(curVehicle, "length");
+            vehicleInfo.width = getDoubleFromJsonObject(curVehicle, "width");
+            vehicleInfo.maxPosAcc = getDoubleFromJsonObject(curVehicle, "maxPosAcc");
+            vehicleInfo.maxNegAcc = getDoubleFromJsonObject(curVehicle, "maxNegAcc");
+            vehicleInfo.usualPosAcc = getDoubleFromJsonObject(curVehicle, "usualPosAcc");
+            vehicleInfo.usualNegAcc = getDoubleFromJsonObject(curVehicle, "usualNegAcc");
+            vehicleInfo.minGap = getDoubleFromJsonObject(curVehicle, "minGap");
+            vehicleInfo.maxSpeed = getDoubleFromJsonObject(curVehicle, "maxSpeed");
+            vehicleInfo.headwayTime = getDoubleFromJsonObject(curVehicle, "headwayTime");
+            // route
+            JSONArray curRoute = getJsonMemberArray(curFlowValue, "route");
+            Route route = flow.getRoute();
+            vehicleInfo.route = route;
+            for (int j = 0; j < curRoute.size(); j++) {
+                Road road = roadNet.getRoadById(getStringFromJsonArray(curRoute, j));
+                route.getRoute().add(road);
+            }
+            // interval
+            flow.setInterval(getDoubleFromJsonObject(curFlowValue, "interval"));
+            // startTime
+            flow.setStartTime(getIntFromJsonObject(curFlowValue, "startTime"));
+            // endTime
+            flow.setEndTime(getIntFromJsonObject(curFlowValue, "endTime"));
+            flow.setEngine(this);
+        }
         return true;
     }
 
-    private boolean loadConfig(Engine engine, String configFile) {
+    public boolean loadConfig(String configFile) {
+        String json = readJsonData(configFile);
+        JSONObject configValues = JSONObject.parseObject(json);
+        try {
+            interval = getDoubleFromJsonObject(configValues, "interval");
+            warnings = false;
+            rlTrafficLight = getBooleanFromJsonObject(configValues, "rlTrafficLight");
+            laneChange = getBooleanFromJsonObject(configValues, "laneChange");
+            seed = getIntFromJsonObject(configValues, "seed");
+            rnd.setSeed(seed);
+            dir = getStringFromJsonObject(configValues, "dir");
+            String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
+            String flowFile = getStringFromJsonObject(configValues, "flowFile");
+            loadRoadNet(dir + roadNetFile);
+            loadFlow(dir + flowFile);
+            if (warnings) {
+                checkWarning();
+            }
+            saveReplay = isSaveReplayInConfig = getBooleanFromJsonObject(configValues, "saveReplay");
+            if (saveReplay) {
+                String roadNetLogFile = getStringFromJsonObject(configValues, "roadnetLogFile");
+                String replayLogFile = getStringFromJsonObject(configValues, "replayLogFile");
+                setLogFile(dir + roadNetLogFile, dir + replayLogFile);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return true;
     }
 
@@ -159,8 +225,15 @@ public class Engine {
 
     }
 
-    public Engine(String configFile, int threadNum) {
+    public Engine() {
+        rnd = new Random();
+        roadNet = new RoadNet();
+        flows = new ArrayList<>();
+    }
 
+    public Engine(String configFile, int threadNum) {
+        roadNet = new RoadNet();
+        flows = new ArrayList<>();
     }
 
     public boolean checkPriority(int priority) {
