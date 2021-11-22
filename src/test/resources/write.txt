@@ -1,0 +1,2 @@
+RoadNet{roads=8, intersections=5, roadMap=8, interMap=5, drivableMap=252, lanes=56, laneLinks=196, drivables=252}
+12
