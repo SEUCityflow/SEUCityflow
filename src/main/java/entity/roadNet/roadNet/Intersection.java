@@ -19,7 +19,14 @@ public class Intersection {
     private List<Cross> crosses;
     private List<LaneLink> laneLinks;
 
-    private Cross calCross(LaneLink laneLink1, LaneLink laneLink2) { // 计算两 laneLink 的 cross
+    public Intersection() {
+        roads = new ArrayList<>();
+        roadLinks = new ArrayList<>();
+        crosses = new ArrayList<>();
+        laneLinks = new ArrayList<>();
+    }
+
+    private Cross calCross(LaneLink laneLink1, LaneLink laneLink2) {
         List<Point> p1 = laneLink1.getPoints();
         List<Point> p2 = laneLink2.getPoints();
         double disa = 0;
@@ -30,11 +37,11 @@ public class Intersection {
                 Point A2 = p1.get(i + 1);
                 Point B1 = p2.get(j);
                 Point B2 = p2.get(j + 1);
-                if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) { // 平行
+                if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) {
                     continue;
                 }
-                Point p = Point.calcIntersectionPoint(A1, A2, B1, B2); // 向量交点
-                if (Point.onSegment(A1, A2, p) && Point.onSegment(B1, B2, p)) { // 是线段交点
+                Point p = Point.calcIntersectionPoint(A1, A2, B1, B2);
+                if (Point.onSegment(A1, A2, p) && Point.onSegment(B1, B2, p)) {
                     Cross cross = new Cross();
                     cross.setLaneLinks(laneLink1, laneLink2);
                     cross.setDistanceOnLane(disa + p.minus(A1).len(), disb + p.minus(B1).len());
@@ -43,7 +50,7 @@ public class Intersection {
                     double w2 = laneLink2.getWidth();
                     double c1 = w1 / Math.sin(cross.getAng());
                     double c2 = w2 / Math.sin(cross.getAng());
-                    double diag = (c1 * c1 + c2 * c2 + 2 * c1 * c2 * Math.cos(cross.getAng())) / 4; //?
+                    double diag = (c1 * c1 + c2 * c2 + 2 * c1 * c2 * Math.cos(cross.getAng())) / 4;
                     cross.setSafeDistances(Math.sqrt(diag - w2 * w2 / 4), Math.sqrt(diag - w1 * w1 / 4));
                     return cross;
                 }
@@ -52,8 +59,8 @@ public class Intersection {
         return null;
     }
 
-    private void initCrosses() { // 计算 intersection 内 cross
-        List<LaneLink> allLaneLink = new ArrayList<LaneLink>();
+    public void initCrosses() {
+        List<LaneLink> allLaneLink = new ArrayList<>();
         for (RoadLink roadLink : roadLinks) {
             allLaneLink.addAll(roadLink.getLaneLinks());
         }
@@ -61,6 +68,9 @@ public class Intersection {
         for (int i = 0; i < n; i++) {
             for (int j = i + 1; j < n; j++) {
                 Cross p = calCross(allLaneLink.get(i), allLaneLink.get(j));
+                if (p == null) {
+                    continue;
+                }
                 crosses.add(p);
             }
         }
@@ -137,8 +147,8 @@ public class Intersection {
         }
     }
 
-    public boolean isImplicitIntersection()  {
-        return trafficLight.getPhases().size() <= 1;
+    public boolean isNotImplicitIntersection()  {
+        return trafficLight.getPhases().size() > 1;
     }
 
     public Point getPosition()  {
