@@ -73,23 +73,6 @@ public abstract class Drivable {
         return null;
     }
 
-    public Point getPointByDistance(double dis) { // 距 drivable 起点 dis 的点
-        return Point.getPointByDistance(points, dis);
-    }
-
-    public Point getDirectionByDistance(double dis) { // 距 drivable 起点 dis 处的方向
-        double remain = dis;
-        for (int i = 0; i + 1 < points.size(); i++) {
-            double len = points.get(i + 1).minus(points.get(i)).len();
-            if (remain < len) {
-                return points.get(i + 1).minus(points.get(i)).unit();
-            } else {
-                remain -= len;
-            }
-        }
-        return points.get(points.size() - 1).minus(points.get(points.size() - 2)).unit();
-    }
-
     public void pushVehicle(Vehicle vehicle) {
         vehicles.add(vehicle);
     }
