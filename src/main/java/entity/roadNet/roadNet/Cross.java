@@ -2,14 +2,16 @@ package entity.roadNet.roadNet;
 
 import entity.vehicle.vehicle.Vehicle;
 
+import java.util.Arrays;
+
 public class Cross {
-    private LaneLink[] laneLinks; // 产生此 cross 的两条 laneLink
-    private Vehicle[] notifyVehicles; // 两条 laneLink 上会在此 cross 冲突的车辆
-    private double[] notifyDistances; // 距 cross 的距离
-    private double[] distanceOnLane; // notifyVehicle 在 laneLink 上已行驶的距离
+    private LaneLink[] laneLinks;
+    private Vehicle[] notifyVehicles;
+    private double[] notifyDistances;
+    private double[] distanceOnLane;
     private double leaveDistance;
     private double arriveDistance;
-    private double ang; // 夹角的弧度值
+    private double ang;
     private double[] safeDistances;
 
     public Cross() {
@@ -20,26 +22,26 @@ public class Cross {
         distanceOnLane = new double[2];
     }
 
-    public void notify(LaneLink laneLink, Vehicle vehicle, double notifyDistance) { // 设定当前 cross 的 laneLink 上的 notifyVehicle 与 distance
+    public void notify(LaneLink laneLink, Vehicle vehicle, double notifyDistance) {
         int i = (laneLink == laneLinks[0]) ? 0 : 1;
         notifyVehicles[i] = vehicle;
         notifyDistances[i] = notifyDistance;
     }
 
-    // Todo: canPass 条件待讨论
-    public boolean canPass(Vehicle vehicle, LaneLink laneLink, double distanceToLaneLinkStart) { // vehicle 是否可由 laneLink 通过 cross
+    // Todo: canPass
+    public boolean canPass(Vehicle vehicle, LaneLink laneLink, double distanceToLaneLinkStart) {
         int i = (laneLink == laneLinks[0]) ? 0 : 1;
         Vehicle foeVehicle = notifyVehicles[1 - i];
         RoadLinkType t1 = laneLinks[i].getRoadLinkType();
         RoadLinkType t2 = laneLinks[1 - i].getRoadLinkType();
-        double d1 = distanceOnLane[i] - distanceToLaneLinkStart; // 当前车辆距 cross 距离
-        double d2 = distanceOnLane[1 - i]; // foeVehicle 距 cross 距离
+        double d1 = distanceOnLane[i] - distanceToLaneLinkStart;
+        double d2 = distanceOnLane[1 - i];
 
-        if (foeVehicle == null || !vehicle.canYield(d1) || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) { // 必可通过的情况：无 foe 或来不及停下 或 foe 已通过 或 fow 死锁阻拦
+        if (foeVehicle == null || !vehicle.canYield(d1) || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) {
             return true;
         }
         boolean canPass = false;
-        if (foeVehicle.canYield(d2)) { // 都可停，如 foe 不可停则必自己停
+        if (foeVehicle.canYield(d2)) {
             int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
             int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
             if (reachSteps < foeVehicleReachSteps) {
@@ -52,12 +54,12 @@ public class Cross {
                 } else if (t1.ordinal() == t2.ordinal()) {
                     if (vehicle.getEnterLaneLinkTime() == foeVehicle.getBufferEnterLaneLinkTime()) {
                         if (d1 == d2) {
-                            canPass = vehicle.getPriority() > foeVehicle.getPriority(); // 优先级高的过
+                            canPass = vehicle.getPriority() > foeVehicle.getPriority();
                         } else {
-                            canPass = d1 < d2; // 近的过
+                            canPass = d1 < d2;
                         }
                     } else {
-                        canPass = vehicle.getBufferEnterLaneLinkTime() < foeVehicle.getEnterLaneLinkTime(); // 早进路口的过
+                        canPass = vehicle.getBufferEnterLaneLinkTime() < foeVehicle.getEnterLaneLinkTime();
                     }
                 }
             }
