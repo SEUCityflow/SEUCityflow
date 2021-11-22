@@ -8,16 +8,15 @@ import java.util.List;
 public class TrafficLight {
     private Intersection intersection;
     private List<LightPhase> phases;
-    private List<Integer> roadLinkIndices;
+//    private List<Integer> roadLinkIndices;
     private double remainDuration;
     private int curPhaseIndex;
 
     public TrafficLight() {
-        phases = new ArrayList<LightPhase>();
-        roadLinkIndices = new ArrayList<Integer>();
+        phases = new ArrayList<>();
     }
 
-    public void init(int initPhaseIndex) { // 设定当前信号灯 phase
+    public void init(int initPhaseIndex) {
         if (intersection.isVirtual()) {
             return;
         }
@@ -58,5 +57,37 @@ public class TrafficLight {
 
     public void reset() {
         init(0);
+    }
+
+    public void setIntersection(Intersection intersection) {
+        this.intersection = intersection;
+    }
+
+    public void setPhases(List<LightPhase> phases) {
+        this.phases = phases;
+    }
+
+//    public List<Integer> getRoadLinkIndices() {
+//        return roadLinkIndices;
+//    }
+//
+//    public void setRoadLinkIndices(List<Integer> roadLinkIndices) {
+//        this.roadLinkIndices = roadLinkIndices;
+//    }
+
+    public double getRemainDuration() {
+        return remainDuration;
+    }
+
+    public void setRemainDuration(double remainDuration) {
+        this.remainDuration = remainDuration;
+    }
+
+    public int getCurPhaseIndex() {
+        return curPhaseIndex;
+    }
+
+    public void setCurPhaseIndex(int curPhaseIndex) {
+        this.curPhaseIndex = curPhaseIndex;
     }
 }
