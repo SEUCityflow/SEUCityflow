@@ -175,6 +175,14 @@ public class Engine {
 
     }
 
+    public double getCurrentTime() { // 当前时间
+        return step * interval;
+    }
+
+    public void pushVehicle(Vehicle vehicle, boolean pushToDrivable) {
+
+    }
+
 
     // set / get
     public Map<Integer, Pair<Vehicle, Integer>> getVehiclePool() {
