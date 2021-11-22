@@ -26,8 +26,11 @@ public class Flow {
         this.id = id;
         assert (timeInterval >= 1 || (startTime == endTime));
         nowTime = interval;
+    }
 
-
+    public Flow() {
+        vehicleTemplate = new VehicleInfo();
+        route = new Route();
     }
 
     // 每个 timeInterval 对 flow 进行的操作
