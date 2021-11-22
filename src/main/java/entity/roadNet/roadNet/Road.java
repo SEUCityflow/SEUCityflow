@@ -4,6 +4,7 @@ import entity.vehicle.vehicle.Vehicle;
 import util.Point;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 public class Road {
@@ -14,16 +15,16 @@ public class Road {
     private List<Point> points;
     private List<Vehicle> planeRouteBuffer;
 
-    private void initLanePoints() { // 计算每条 lane 的 points
+    public void initLanePoints() {
         double dsum = 0;
-        List<Point> roadPoints = new ArrayList<Point>(points);
-        if (! startIntersection.isImplicitIntersection()) {
+        List<Point> roadPoints = new ArrayList<>(points);
+        if (! startIntersection.isVirtual() && startIntersection.isNotImplicitIntersection()) {
             double width = startIntersection.getWidth();
             Point p1 = roadPoints.get(0);
             Point p2 = roadPoints.get(1);
             roadPoints.set(0, p1.plus(p2.minus(p1).unit().multiply(width)));
         }
-        if (! endIntersection.isImplicitIntersection()) {
+        if (! endIntersection.isVirtual() && endIntersection.isNotImplicitIntersection()) {
             double width = endIntersection.getWidth();
             Point p1 = roadPoints.get(roadPoints.size() - 2);
             Point p2 = roadPoints.get(roadPoints.size() - 1);
@@ -57,7 +58,7 @@ public class Road {
     public Road() {
         lanes = new ArrayList<Lane>();
         points = new ArrayList<Point>();
-        planeRouteBuffer = new ArrayList<Vehicle>();
+        planeRouteBuffer = new LinkedList<>();
     }
 
     public void buildSegmentationByInterval(double interval) { // TODO: segment 段数存在问题，当前为修改方案
@@ -142,5 +143,29 @@ public class Road {
 
     public List<Vehicle> getPlaneRouteBuffer() {
         return planeRouteBuffer;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setStartIntersection(Intersection startIntersection) {
+        this.startIntersection = startIntersection;
+    }
+
+    public void setEndIntersection(Intersection endIntersection) {
+        this.endIntersection = endIntersection;
+    }
+
+    public void setLanes(List<Lane> lanes) {
+        this.lanes = lanes;
+    }
+
+    public void setPoints(List<Point> points) {
+        this.points = points;
+    }
+
+    public void setPlaneRouteBuffer(List<Vehicle> planeRouteBuffer) {
+        this.planeRouteBuffer = planeRouteBuffer;
     }
 }

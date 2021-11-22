@@ -27,10 +27,10 @@ public class Lane extends  Drivable{
     public Lane() {
         super();
         drivableType = DrivableType.LANE;
-        segments = new ArrayList<Segment>();
-        laneLinks = new ArrayList<LaneLink>();
-        waitingBuffer = new LinkedList<Vehicle>();
-        history = new LinkedList<HistoryRecord>();
+        segments = new ArrayList<>();
+        laneLinks = new ArrayList<>();
+        waitingBuffer = new LinkedList<>();
+        history = new LinkedList<>();
     }
 
     public Lane(double width, double maxSpeed, int laneIndex, Road belongRoad) {
@@ -40,10 +40,10 @@ public class Lane extends  Drivable{
         this.laneIndex = laneIndex;
         this.belongRoad = belongRoad;
         drivableType = DrivableType.LANE;
-        segments = new ArrayList<Segment>();
-        laneLinks = new ArrayList<LaneLink>();
-        waitingBuffer = new LinkedList<Vehicle>();
-        history = new LinkedList<HistoryRecord>();
+        segments = new ArrayList<>();
+        laneLinks = new ArrayList<>();
+        waitingBuffer = new LinkedList<>();
+        history = new LinkedList<>();
     }
 
     @Override
@@ -55,7 +55,7 @@ public class Lane extends  Drivable{
         return belongRoad;
     }
 
-    public boolean available(Vehicle vehicle)  { // 当前 lane 是否有足够空间，用于 vehicle 初始 lane 的选择
+    public boolean available(Vehicle vehicle)  {
         if (!vehicles.isEmpty()) {
             Vehicle tail = vehicles.get(vehicles.size() - 1);
             return tail.getCurDis() > tail.getLen() + vehicle.getMinGap();
@@ -64,7 +64,7 @@ public class Lane extends  Drivable{
         }
     }
 
-    public boolean canEnter(Vehicle vehicle)  { // 当前车辆是否可进入，用于 drivable 的变换
+    public boolean canEnter(Vehicle vehicle)  {
         if (!vehicles.isEmpty()) {
             Vehicle tail = vehicles.get(vehicles.size() - 1);
             return tail.getCurDis() > tail.getLen() + vehicle.getLen() || tail.getSpeed() >= 2;

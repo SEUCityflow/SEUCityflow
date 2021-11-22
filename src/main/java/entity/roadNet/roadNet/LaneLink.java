@@ -11,7 +11,7 @@ public class LaneLink extends Drivable{
 
     public LaneLink() {
         super();
-        crosses = new ArrayList<Cross>();
+        crosses = new ArrayList<>();
         drivableType = DrivableType.LANELINK;
     }
 
@@ -50,5 +50,21 @@ public class LaneLink extends Drivable{
 
     public void reset() {
         super.reset();
+    }
+
+    public void setRoadLink(RoadLink roadLink) {
+        this.roadLink = roadLink;
+    }
+
+    public void setStartLane(Lane startLane) {
+        this.startLane = startLane;
+    }
+
+    public void setEndLane(Lane endLane) {
+        this.endLane = endLane;
+    }
+
+    public void setCrosses(List<Cross> crosses) {
+        this.crosses = crosses;
     }
 }
