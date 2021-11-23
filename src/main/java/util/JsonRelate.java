@@ -8,7 +8,15 @@ import java.nio.charset.StandardCharsets;
 
 public class JsonRelate {
     // public static boolean readJsonFromFile(String filename, rapidjson::Document document);
-    // boolean writeJsonToFile(String filename,  rapidjson::Document document);
+    public static boolean writeJsonToFile(String filename, String json) {
+        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filename))) {
+            bufferedWriter.write(String.valueOf(json));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
     public static String readJsonData(String pactFile) {
         StringBuilder strBuffer = new StringBuilder();
         File myFile = new File(pactFile);
@@ -18,7 +26,7 @@ public class JsonRelate {
         try {
             FileInputStream fis = new FileInputStream(pactFile);
             InputStreamReader inputStreamReader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader in  = new BufferedReader(inputStreamReader);
+            BufferedReader in = new BufferedReader(inputStreamReader);
 
             String str;
             while ((str = in.readLine()) != null) {
