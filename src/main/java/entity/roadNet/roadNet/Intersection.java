@@ -2,6 +2,7 @@ package entity.roadNet.roadNet;
 
 import entity.roadNet.trafficLight.TrafficLight;
 import util.Point;
+import static util.Point.*;
 import util.Util;
 
 import java.util.ArrayList;
@@ -85,7 +86,7 @@ public class Intersection {
     }
 
     public List<Point> getOutLine() { // 计算 intersection 凸包
-        List<Point> ret = new ArrayList<Point>();
+        List<Point> ret = new ArrayList<>();
         ret.add(point);
         for (Road road : roads) {
             Point roadDirect = road.getEndIntersection().getPoint().minus(road.getStartIntersection().getPoint()).unit();
@@ -96,7 +97,7 @@ public class Intersection {
             double roadWidth = road.getWidth();
             double deltaWidth = Math.max(5, 0.5 * Math.min(width, roadWidth));
             Point pointA = point.minus(roadDirect.multiply(width));
-            Point pointB = point.minus(pDirect.multiply(roadWidth));
+            Point pointB = pointA.minus(pDirect.multiply(roadWidth));
             ret.add(pointA);
             ret.add(pointB);
             if (deltaWidth < road.getAverageLength()) {
@@ -106,7 +107,8 @@ public class Intersection {
                 ret.add(pointB1);
             }
         }
-        return Point.calConvexHull(ret);
+        return calConvexHull(ret);
+//        return ret;
     }
 
     public String getId() {
@@ -129,10 +131,6 @@ public class Intersection {
         return crosses;
     }
 
-    public boolean isVirtualIntersection() {
-        return isVirtual;
-    }
-
     public List<LaneLink> getLaneLinks() {
         return laneLinks;
     }
@@ -149,10 +147,6 @@ public class Intersection {
 
     public boolean isNotImplicitIntersection()  {
         return trafficLight.getPhases().size() > 1;
-    }
-
-    public Point getPosition()  {
-        return point;
     }
 
     public void setId(String id) {
