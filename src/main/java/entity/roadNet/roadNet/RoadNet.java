@@ -11,6 +11,7 @@ import static util.Point.*;
 import java.util.*;
 
 import util.Point;
+import util.RoadNetSerialization;
 
 
 public class RoadNet {
@@ -21,8 +22,7 @@ public class RoadNet {
     private Map<String, Drivable> drivableMap;
     private List<Lane> lanes;
     private List<LaneLink> laneLinks;
-//    private List<Drivable> drivables;
-    private Set<Drivable> drivables;
+    private List<Drivable> drivables;
     private static final Map<String, RoadLinkType> typeMap = new HashMap<>();
 
     static {
@@ -40,8 +40,7 @@ public class RoadNet {
         drivableMap = new HashMap<>();
         lanes = new ArrayList<>();
         laneLinks = new ArrayList<>();
-//        drivables = new ArrayList<>();
-        drivables = new HashSet<>();
+        drivables = new ArrayList<>();
     }
 
     private void loadPoints(JSONArray pointValues, List<Point> points) throws Exception {
@@ -115,7 +114,7 @@ public class RoadNet {
         JSONArray curRoadValues = getJsonMemberArray(object, "roads");
         for (int i = 0; i < curRoadValues.size(); i++) {
             String roadName = getStringFromJsonArray(curRoadValues, i);
-            roads.add(roadMap.get(roadName));
+            intersection.getRoads().add(roadMap.get(roadName));
         }
         // isVirtual
         intersection.setVirtual(getBooleanFromJsonObject(object, "virtual"));
@@ -181,12 +180,14 @@ public class RoadNet {
         }
     }
 
+    // TODO: 配置 fastJSON 序列化格式
     public boolean loadFromJson(String jsonFileName) throws Exception {
-        String json = readJsonData("D:\\java\\JsonTest\\src\\main\\resources\\roadnet.json");
+        String json = readJsonData(jsonFileName);
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONArray intersectionValues = getJsonMemberArray(jsonObject, "intersections");
         JSONArray roadValues = getJsonMemberArray(jsonObject, "roads");
         buildMapping(intersectionValues, roadValues);
+        System.out.println(roadValues.size());
         //roads
         for (int i = 0; i < roadValues.size(); i++) {
             JSONObject curRoadValue = roadValues.getJSONObject(i);
@@ -211,11 +212,18 @@ public class RoadNet {
             drivables.addAll(road.getLanes());
             road.initLanePoints();
         }
-
         return true;
     }
 
-    // public rapidjson::Value convertToJson(rapidjson::Document::AllocatorType allocator)
+    public String convertToJson() {
+        try {
+            RoadNetSerialization roadNetSerialization = new RoadNetSerialization(this);
+            return JSON.toJSONString(roadNetSerialization);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     public List<Road> getRoads()  {
         return roads;
