@@ -4,16 +4,19 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import entity.flow.Flow;
 import entity.flow.Route;
-import entity.roadNet.roadNet.Drivable;
-import entity.roadNet.roadNet.Intersection;
-import entity.roadNet.roadNet.Road;
-import entity.roadNet.roadNet.RoadNet;
+import entity.roadNet.roadNet.*;
 import entity.vehicle.vehicle.Vehicle;
 import entity.vehicle.vehicle.VehicleInfo;
 import javafx.util.Pair;
 import util.Barrier;
+import util.Point;
+import static util.Point.*;
+
 import static util.JsonRelate.*;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.*;
 
 import static util.JsonRelate.readJsonData;
@@ -99,7 +102,7 @@ public class Engine {
     private Barrier endBarrier;
     private boolean finished;
     private String dir;
-    // private ofStream logOut; java 输出流暂未看
+    private BufferedWriter logOut;
 
     private boolean rlTrafficLight;
     private boolean laneChange;
@@ -181,8 +184,9 @@ public class Engine {
         return true;
     }
 
-    private void setLogFile(String jsonFile, String logFile) {
-
+    public void setLogFile(String jsonFile, String logFile) throws IOException {
+        writeJsonToFile(jsonFile, "{\"static\":" + roadNet.convertToJson() + "}");
+        logOut = new BufferedWriter(new FileWriter(logFile));
     }
 
     private void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer) {
@@ -213,8 +217,38 @@ public class Engine {
 
     }
 
-    private void updateLog() {
-
+    private void updateLog() throws IOException {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (Vehicle vehicle: getRunningVehicle()) {
+            Point pos = vehicle.getPoint();
+            Point dir = getDirectionByDistance(vehicle.getCurDrivable().getPoints(), vehicle.getCurDis());
+            int lc = 0;
+            //          int lc = vehicle.lastLaneChangeDirection();
+            stringBuilder.append(pos.x).append(" ").append(pos.y).append(Math.atan2(dir.y, dir.x)).append(" ").append(vehicle.getId()).append(" ").append(lc).append(" ").append(vehicle.getLen()).append(" ").append(vehicle.getWidth()).append(",");
+        }
+        stringBuilder.append(";");
+        for (Road road: roadNet.getRoads()) {
+            if (road.getEndIntersection().isVirtual()) {
+                continue;
+            }
+            stringBuilder.append(road.getId());
+            for (Lane lane: road.getLanes()) {
+                if (!lane.getEndIntersection().isNotImplicitIntersection()) {
+                    stringBuilder.append(" i");
+                    continue;
+                }
+                boolean can_go = true;
+                for (LaneLink laneLink: lane.getLaneLinks()) {
+                    if (!laneLink.isAvailable()) {
+                        can_go = false;
+                        break;
+                    }
+                }
+                stringBuilder.append(can_go ? " g" : " r");
+            }
+            stringBuilder.append(";");
+        }
+        logOut.write(String.valueOf(stringBuilder));
     }
 
     private void checkWarning() {
@@ -256,6 +290,9 @@ public class Engine {
 
     }
 
+    private List<Vehicle> getRunningVehicle() {
+        return null;
+    }
 
     // set / get
     public Map<Integer, Pair<Vehicle, Integer>> getVehiclePool() {
