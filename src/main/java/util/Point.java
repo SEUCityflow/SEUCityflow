@@ -115,28 +115,37 @@ public class Point {
 
     public static List<Point> calConvexHull(List<Point> points) {
         List<Point> ret = new ArrayList<>();
-        List<Point> temp = new ArrayList<>(points);
-        temp.sort(Comparator.comparing(Point::getX));
-        Point p0 = temp.get(0);
+        points.sort((o1, o2) -> {
+            if (o1.y == o2.y) {
+                return (int) (o1.x - o2.x);
+            }
+            return (int)(o1.y - o2.y);
+        });
+        Point p0 = points.get(0);
         ret.add(p0);
-        temp.remove(p0);
-        temp.sort(Comparator.comparing(Point::ang));
-        for (int i = 0; i < temp.size(); i++) {
-            Point point = points.get(i);
+        points.remove(0);
+        points.sort((o1, o2) -> {
+            if (o1.minus(p0).ang() < o2.minus(p0).ang()) {
+                return -1;
+            } else if (o1.minus(p0).ang() == o2.minus(p0).ang()) {
+                return 0;
+            }
+            return 1;
+        });
+        for (Point point : points) {
             Point p2 = ret.get(ret.size() - 1);
             if (ret.size() < 2) {
                 if (point.x != p2.x || point.y != p2.y) {
                     ret.add(point);
-                } else {
-                    continue;
                 }
+                continue;
             }
             Point p1 = ret.get(ret.size() - 2);
             while (ret.size() > 1 && crossMultiply(point.minus(p2), p2.minus(p1)) >= 0) {
                 p2 = p1;
                 ret.remove(ret.size() - 1);
                 if (ret.size() > 1) {
-                    p1 = ret.get(ret.size() -2);
+                    p1 = ret.get(ret.size() - 2);
                 }
             }
             ret.add(point);
