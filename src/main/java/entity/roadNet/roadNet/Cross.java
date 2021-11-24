@@ -137,4 +137,8 @@ public class Cross {
     public double getDistanceOnLane0() {
         return distanceOnLane[0];
     }
+
+    public double getLeaveDistance() {
+        return leaveDistance;
+    }
 }
