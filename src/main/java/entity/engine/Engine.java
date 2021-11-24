@@ -93,7 +93,7 @@ public class Engine {
     private boolean saveReplay;
     private boolean isSaveReplayInConfig;
     private boolean warnings;
-    // private rapidjson::Document jsonRoot; java 读取 json 的类暂时未找
+
     private String stepLog;
     private int step;
     private int activeVehicleCount;
@@ -259,6 +259,10 @@ public class Engine {
 
     }
 
+    private List<Vehicle> getRunningVehicle() {
+        return null;
+    }
+
     public Engine() {
         rnd = new Random();
         roadNet = new RoadNet();
@@ -288,10 +292,6 @@ public class Engine {
 
     public void pushVehicle(Vehicle vehicle, boolean pushToDrivable) {
 
-    }
-
-    private List<Vehicle> getRunningVehicle() {
-        return null;
     }
 
     // set / get
