@@ -505,6 +505,12 @@ public class Engine {
         endBarrier.Wait();
     }
 
+    public Engine() {
+        rnd = new Random();
+        roadNet = new RoadNet();
+        flows = new ArrayList<>();
+    }
+
     public Engine(String configFile, int threadNum) {
         this.threadNum = threadNum;
         startBarrier = new Barrier(this.threadNum + 1);
