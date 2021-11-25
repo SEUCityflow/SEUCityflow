@@ -34,6 +34,7 @@ class ThreadControl implements Runnable {
     private List<Road> roads;
     private List<Intersection> intersections;
     private List<Drivable> drivables;
+
     public ThreadControl(Engine engine, Barrier startBarrier,Barrier endBarrier, Set<Vehicle> vehicles, List<Road> roads, List<Intersection> intersections, List<Drivable> drivables){
         this.engine = engine;
         this.startBarrier = startBarrier;
@@ -399,7 +400,6 @@ public class Engine {
         getVehicleRemoveBuffer().clear();
     }
 
-
     private void updateLocation() {
         startBarrier.Wait();
         endBarrier.Wait();
@@ -512,14 +512,26 @@ public class Engine {
     }
 
     public Engine(String configFile, int threadNum) {
+        vehiclePool = new HashMap<>();
+        vehicleMap = new HashMap<>();
+        threadVehiclePool = new LinkedList<>();
+        threadRoadPool = new ArrayList<>();
+        threadIntersectionPool = new ArrayList<>();
+        threadDrivablePool = new ArrayList<>();
+        pushBuffer = new LinkedList<>();
+        VehicleRemoveBuffer = new LinkedList<>();
+        threadPool = new ArrayList<>();
+        rnd = new Random();
+        roadNet = new RoadNet();
+        flows = new ArrayList<>();
         this.threadNum = threadNum;
         startBarrier = new Barrier(this.threadNum + 1);
         endBarrier = new Barrier(this.threadNum + 1);
         for (int i = 0; i < threadNum; i++) {
             threadVehiclePool.add(new HashSet<>());
-            threadRoadPool.add(new LinkedList<>());
-            threadIntersectionPool.add(new LinkedList<>());
-            threadDrivablePool.add(new LinkedList<>());
+            threadRoadPool.add(new ArrayList<>());
+            threadIntersectionPool.add(new ArrayList<>());
+            threadDrivablePool.add(new ArrayList<>());
             threadPool.add(new ThreadControl(this,
                     startBarrier,
                     endBarrier,
@@ -533,20 +545,25 @@ public class Engine {
         if (!success) {
             System.out.println("load config failed!");
         }
+        System.out.println("1");
         threadExcutor = Executors.newFixedThreadPool(threadNum);
         for (int i = 0; i < threadNum; i++) {
             threadExcutor.execute(threadPool.get(i));
         }
+        System.out.println("1");
     }
 
     @Override
     protected void finalize() throws Throwable {
         logOut.close();
         finished = true;
+        System.out.println(12);
         for (int i = 0; i < (laneChange?9:6); i++){
             startBarrier.Wait();
             endBarrier.Wait();
+            System.out.println(3);
         }
+        System.out.println("end");
         threadExcutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         super.finalize();
     }

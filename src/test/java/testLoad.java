@@ -18,9 +18,8 @@ public class testLoad {
 
     public static void main(String[] args) {
         try {
-            Engine engine = new Engine();
+            Engine engine = new Engine("src/test/resources/config.json", 4);
             try {
-                engine.loadConfig("src/test/resources/config.json");
                 StringBuilder stringBuilder = new StringBuilder();
                 for (Intersection intersection: engine.getRoadNet().getIntersections()) {
                     stringBuilder.append(intersection.getId()).append("\n");
