@@ -41,7 +41,7 @@ class ControllerInfo {
     double dis;
     Drivable drivable;
     Drivable prevDrivable;
-    double approachingIntersectionDistance = 0.0;
+    double approachingIntersectionDistance;
     double gap;
     int enterLaneLinkTime;
     Vehicle leader;
@@ -50,6 +50,20 @@ class ControllerInfo {
     boolean running;
     Router router;
 
+    public ControllerInfo(ControllerInfo other) {
+        this.dis = other.dis;
+        this.drivable = other.drivable;
+        this.prevDrivable = other.prevDrivable;
+        this.approachingIntersectionDistance = other.approachingIntersectionDistance;
+        this.gap = other.gap;
+        this.enterLaneLinkTime = other.enterLaneLinkTime;
+        this.leader = other.leader;
+        this.blocker = other.blocker;
+        this.end = other.end;
+        this.running = other.running;
+        this.router = other.router;
+    }
+
     ControllerInfo(Vehicle vehicle, Route route, Random rnd) {
         router = new Router(vehicle, route, rnd);
         enterLaneLinkTime = Integer.MAX_VALUE;
@@ -57,8 +71,18 @@ class ControllerInfo {
 
     // redo
     ControllerInfo(Vehicle vehicle, ControllerInfo other) {
+        dis = other.dis;
+        drivable = other.drivable;
+        prevDrivable = other.prevDrivable;
+        approachingIntersectionDistance = other.approachingIntersectionDistance;
+        gap = other.gap;
+        enterLaneLinkTime = other.enterLaneLinkTime;
+        leader = other.leader;
+        blocker = other.blocker;
+        end = other.end;
+        running = other.running;
+        router = other.router;
         router.setVehicle(vehicle);
-
     }
 }
 
@@ -75,7 +99,7 @@ public class Vehicle implements Cloneable {
 
     public Vehicle(Vehicle vehicle, Flow flow) {
         vehicleInfo = vehicle.vehicleInfo;
-        controllerInfo = vehicle.controllerInfo;
+        controllerInfo = new ControllerInfo(this, vehicle.controllerInfo);
         buffer = vehicle.buffer;
         priority = vehicle.priority;
         id = vehicle.id;
@@ -87,13 +111,12 @@ public class Vehicle implements Cloneable {
     // shadow 创建，除 laneChange（新建）和 flow（nullptr）与 router.vehicle 外全部一致
     public Vehicle(Vehicle vehicle, String id, Engine engine, Flow flow) {
         vehicleInfo = vehicle.vehicleInfo;
-        controllerInfo = vehicle.controllerInfo;
+        controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd());
         buffer = vehicle.buffer;
         this.id = vehicle.id;
         this.engine = vehicle.engine;
         this.flow = flow;
         while (engine.checkPriority(priority = engine.getRnd().nextInt())) ;
-        controllerInfo.router.setVehicle(this);  // 修改 route 的对应 vehicle
         enterTime = vehicle.enterTime;
     }
 
@@ -116,7 +139,7 @@ public class Vehicle implements Cloneable {
             buffer.deltaDis = dis;
             dis += controllerInfo.dis;  // 到目前所在 drivable 起点的总距离
             Drivable drivable = getCurDrivable();
-            for (int i = 0; drivable != null && dis > drivable.getLength(); ++i) {
+            for (int i = 0; drivable != null && dis > drivable.getLength(); i++) {
                 dis -= drivable.getLength();
                 Drivable nextDrivable = controllerInfo.router.getNextDrivable(i);
                 if (nextDrivable == null) {  // 没有下一 drivable 且 dis 大于当前 drivable 长度，即此时已到达末尾
@@ -133,8 +156,9 @@ public class Vehicle implements Cloneable {
 
     // 如 drivable 改变则返回新的 drivable
     public Drivable getChangedDrivable() {
-        if (!buffer.isDrivableSet)
+        if (!buffer.isDrivableSet) {
             return null;
+        }
         return buffer.drivable;
     }
 
@@ -212,8 +236,9 @@ public class Vehicle implements Cloneable {
             double dis = controllerInfo.drivable.getLength() - controllerInfo.dis;  // 距 lane 首距离
             for (int i = 0; ; ++i) {  // 在未来将驶向的 drivable 内搜寻 leader
                 drivable = getNextDrivable();
-                if (drivable == null)  // 已到 route 末尾，则无 leader
+                if (drivable == null) { // 已到 route 末尾，则无 leader
                     return;
+                }
                 if (drivable.isLaneLink()) {  // if laneLink, check all laneLink start from previous lane, because lanelinks may overlap
                     for (LaneLink laneLink : ((LaneLink) drivable).getStartLane().getLaneLinks()) {
                         if ((candidateLeader = laneLink.getLastVehicle()) != null) {  // drivable 中的 lastVehicle 为 leader
@@ -224,8 +249,9 @@ public class Vehicle implements Cloneable {
                             }
                         }
                     }
-                    if (controllerInfo.leader != null)
+                    if (controllerInfo.leader != null) {
                         return;
+                    }
                 } else {
                     if ((controllerInfo.leader = drivable.getLastVehicle()) != null) {
                         controllerInfo.gap = dis + controllerInfo.leader.getCurDis() - controllerInfo.leader.getLen();
@@ -234,8 +260,9 @@ public class Vehicle implements Cloneable {
                 // 当前 drivable 中无车，再向前找
                 dis += drivable.getLength();
                 // ？多次寻找后 dis 距离过大，停止寻找
-                if (dis > vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2)
+                if (dis > vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2) {
                     return;
+                }
             }
         }
     }
@@ -245,8 +272,9 @@ public class Vehicle implements Cloneable {
         double c = vF * interval / 2 + targetGap - 0.5 * vL * vL / dL - gap;
         double a = 0.5 / dF;
         double b = 0.5 * interval;
-        if (b * b < 4 * a * c)
+        if (b * b < 4 * a * c) {
             return -100;
+        }
         double v1 = 0.5 / a * (Math.sqrt(b * b - 4 * a * c) - b);
         double v2 = 2 * vL - dL * interval + 2 * (gap - targetGap) / interval;
         return Math.min(v1, v2);
@@ -272,23 +300,20 @@ public class Vehicle implements Cloneable {
         v = Math.min(v, getNoCollisionSpeed(leader.getSpeed(), leader.getUsualNegAcc(), vehicleInfo.speed, vehicleInfo.usualNegAcc, controllerInfo.gap, interval,
                 vehicleInfo.minGap)); // 常规情况下制动保持 minGap
         v = Math.min(v, (controllerInfo.gap + (leaderSpeed + assumeDecel / 2) * interval - vehicleInfo.speed * interval / 2) / (vehicleInfo.headwayTime + interval / 2)); // ?
-
         return v;
-
-
     }
 
     public double getStopBeforeSpeed(double distance, double interval) {  // 能在 distance 内停下时经过 interval 时间后的速度
         assert (distance >= 0);
-        if (getBrakeDistanceAfterAccel(vehicleInfo.usualPosAcc, vehicleInfo.usualNegAcc, interval) < distance) // 如果加速 interval 时间后再减速距离依旧满足，那就加速
+        if (getBrakeDistanceAfterAccel(vehicleInfo.usualPosAcc, vehicleInfo.usualNegAcc, interval) < distance) {// 如果加速 interval 时间后再减速距离依旧满足，那就加速
             return vehicleInfo.speed + vehicleInfo.usualPosAcc * interval;
+        }
         double takeInterval = 2 * distance / (vehicleInfo.speed + eps) / interval; // 在 distance 距离内减速到 0 需要几个 interval
         if (takeInterval >= 1) {
             return vehicleInfo.speed - vehicleInfo.speed / (int) takeInterval;
         } else {
             return vehicleInfo.speed - vehicleInfo.speed / takeInterval; // <0 ? (后续会判是否小于0)
         }
-
     }
 
     public int getReachSteps(double distance, double targetSpeed, double acc) {
@@ -314,8 +339,10 @@ public class Vehicle implements Cloneable {
 
     // 以 acc 加速度加速到 speed 所需距离
     public double getDistanceUntilSpeed(double speed, double acc) {
-        if (speed <= vehicleInfo.speed)  // 已到
+        if (speed <= vehicleInfo.speed) { // 已到
             return 0;
+        }
+
         double interval = engine.getInterval();
         int stage1Steps = (int) Math.floor((speed - vehicleInfo.speed) / acc / interval);  // 加速到 speed 需要的 step 数
         double stage1Speed = vehicleInfo.speed + stage1Steps * acc / interval;  // 最终速度
@@ -335,9 +362,7 @@ public class Vehicle implements Cloneable {
         }
         if (controllerInfo.drivable.isLane()) {
             Drivable drivable = getNextDrivable();
-            if (drivable != null && drivable.isLaneLink() && controllerInfo.drivable.getLength() - controllerInfo.dis <= controllerInfo.approachingIntersectionDistance) {
-                return true;
-            }
+            return drivable != null && drivable.isLaneLink() && controllerInfo.drivable.getLength() - controllerInfo.dis <= controllerInfo.approachingIntersectionDistance;
         }
         return false;
     }
@@ -432,7 +457,7 @@ public class Vehicle implements Cloneable {
         return controllerInfo.router.getNextDrivable(i);
     }
 
-    // c++不支持默认参数，故使用方法重载
+    // java不支持默认参数，故使用方法重载
     public Drivable getNextDrivable() {
         return controllerInfo.router.getNextDrivable(0);
     }
