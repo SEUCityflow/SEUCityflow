@@ -15,7 +15,7 @@ public class Flow {
     private int cnt = 0;
     private Engine engine;
     private String id;
-    private boolean valid;
+    private boolean valid = true;
 
     public Flow(VehicleInfo vehicleTemplate, double timeInterval, Engine engine, int startTime, int endTime, String id) {
         this.vehicleTemplate = vehicleTemplate;
@@ -35,18 +35,18 @@ public class Flow {
 
     // 每个 timeInterval 对 flow 进行的操作
     public void nextStep(double timeInterval) {
-        if (!valid)                            // route 不可达
+        if (!valid || endTime != -1 && currentTime > endTime) {// route 不可达 或已结束
             return;
-        if (endTime != -1 && currentTime > endTime) // 未结束
-            return;
+        }
         if (currentTime >= startTime) {   // 可开始
             while (nowTime >= interval) { // 距此 flow 上次进入 RoadNet 已超过 interval，可根据此 flow 再初始化一辆车放入
-                Vehicle vehicle = new Vehicle(vehicleTemplate, id + "_" + Integer.toString(cnt++), engine, this);
+                Vehicle vehicle = new Vehicle(vehicleTemplate, id + "_" + cnt++, engine, this);
                 // priority has been set correctlly before?
-                int priority = vehicle.getPriority();
-                while (engine.checkPriority(priority))
-                    priority = engine.getRnd().nextInt();
-                vehicle.setPriority(priority);
+//                int priority = vehicle.getPriority();
+//                while (engine.checkPriority(priority)) {
+//                    priority = engine.getRnd().nextInt();
+//                }
+//                vehicle.setPriority(priority);
                 engine.pushVehicle(vehicle, false);
                 vehicle.getFirstRoad().addPlanRouteVehicle(vehicle);
                 nowTime -= interval;
@@ -60,7 +60,6 @@ public class Flow {
         nowTime = interval;
         currentTime = 0;
         cnt = 0;
-
     }
 
     public boolean isValid() {
@@ -153,8 +152,9 @@ public class Flow {
     }
 
     public void setValid(boolean valid) {
-        if (this.valid && !valid)
+        if (this.valid && !valid) {
             System.err.println("[warning] Invalid route '" + id + "'. Omitted by default.");
+        }
         this.valid = valid;
     }
 }
