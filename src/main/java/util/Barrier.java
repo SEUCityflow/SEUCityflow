@@ -13,19 +13,20 @@ public class Barrier {
         counter[0] = m_threads;
         counter[1] = 0;
     }
+
     public synchronized void Wait() {
         assert (0 != counter[currCounter]);
-        try{
-            if((--counter[currCounter]) == 0){
-                currCounter = (currCounter+1)%2;
+        try {
+            if ((--counter[currCounter]) == 0) {
+                currCounter = (currCounter + 1) % 2;
                 counter[currCounter] = m_threads;
                 this.notifyAll();
-            }else{
+            } else {
                 this.wait();
                 //System.out.println("aaa");
             }
-        }catch (Exception e){
-
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
