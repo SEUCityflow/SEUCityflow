@@ -16,4 +16,23 @@ public class VehicleInfo {
     public double yieldDistance = 5;
     public double turnSpeed = 8.3333;
     public Route route;
+
+    public VehicleInfo() {
+    }
+
+    public VehicleInfo(VehicleInfo vehicleInfo) {
+        this.speed = vehicleInfo.speed;
+        this.len = vehicleInfo.len;
+        this.width = vehicleInfo.width;
+        this.maxPosAcc = vehicleInfo.maxPosAcc;
+        this.maxNegAcc = vehicleInfo.maxNegAcc;
+        this.usualPosAcc = vehicleInfo.usualPosAcc;
+        this.usualNegAcc = vehicleInfo.usualNegAcc;
+        this.minGap = vehicleInfo.minGap;
+        this.maxSpeed = vehicleInfo.maxSpeed;
+        this.headwayTime = vehicleInfo.headwayTime;
+        this.yieldDistance = vehicleInfo.yieldDistance;
+        this.turnSpeed = vehicleInfo.turnSpeed;
+        this.route = vehicleInfo.route;
+    }
 }
