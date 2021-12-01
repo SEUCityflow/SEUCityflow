@@ -80,7 +80,7 @@ class ThreadControl implements Runnable {
                 ListIterator<Cross> crossIterator = crosses.listIterator();
                 // first check the vehicle on the end lane
                 Vehicle vehicle = laneLink.getEndLane().getLastVehicle();
-                if (vehicle != null && vehicle.getPrevDrivable().equals(laneLink)) {
+                if (vehicle != null && vehicle.getPrevDrivable() == laneLink) {
                     double vehDistance = vehicle.getCurDis() - vehicle.getLen();//problem vehicle 距离此 endLane 起点的距离 C++ 里为 getDistance()函数名未找到
                     while (crossIterator.hasPrevious()) {
                         Cross cross_now = crossIterator.previous();
@@ -112,7 +112,14 @@ class ThreadControl implements Runnable {
                 }
                 // check vehicle on the incoming lane（laneLink 上车已经检查完成但仍有 cross 未 notify）
                 vehicle = laneLink.getStartLane().getFirstVehicle();
-                if (vehicle != null && vehicle.getNextDrivable().equals(laneLink) && laneLink.isAvailable()) {
+//                if (vehicle == null) {
+//                    continue;
+//                }
+//                if (vehicle.getNextDrivable() == null) {
+////                    System.out.println("!!!!!!!!");
+//                    continue;
+//                }
+                if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
                     double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
                     while (crossIterator.hasPrevious()) {
                         crossIterator.previous().notify(laneLink, vehicle, vehDistance);
@@ -183,12 +190,18 @@ class ThreadControl implements Runnable {
     public void run() {
         while (!engine.getFinished()) {
             threadPlanRoute(roads);
+//            System.out.println(1);
             //laneChange...
             threadNotifyCross(intersections);
+//            System.out.println(2);
             threadGetAction(vehicles);
+//            System.out.println(3);
             threadUpdateLocation(drivables);
+//            System.out.println(4);
             threadUpdateAction(vehicles);
+//            System.out.println(5);
             threadUpdateLeaderAndGap(drivables);
+//            System.out.println(6);
         }
     }
 
@@ -293,6 +306,7 @@ public class Engine {
             }
             // interval
             flow.setInterval(getDoubleFromJsonObject(curFlowValue, "interval"));
+            flow.setNowTime(interval);
             // startTime
             flow.setStartTime(getIntFromJsonObject(curFlowValue, "startTime"));
             // endTime
