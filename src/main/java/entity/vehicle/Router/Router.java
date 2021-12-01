@@ -209,9 +209,9 @@ public class Router {
                 List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next());
                 return selectLaneLink(curLane, laneLinks);  // 走向可选 laneLink 的 endLane 中距离 curlane 最近的 lane
             } else {   // 选取的 laneLink 需能确保到达 route 的再下一个 road
-                Road nextTwoRoad = tmpCurRoadIter.next();
                 // 由 route[i] 到 route[i+1] 的 laneLink
-                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoad);
+                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next());
+                Road nextTwoRoad = tmpCurRoadIter.next();
                 List<LaneLink> candidateLaneLinks = new ArrayList<>();
                 for (LaneLink laneLink : laneLinks) {
                     Lane nextLane = laneLink.getEndLane();
@@ -233,8 +233,10 @@ public class Router {
             iCurRoad.previous();
             assert (iCurRoad.hasNext());
         }
-        for (Drivable drivable : planned) {
-            planned.remove(drivable);
+        Iterator<Drivable> drivableIterator = planned.iterator();
+        while (drivableIterator.hasNext()) {
+            Drivable drivable = drivableIterator.next();
+            drivableIterator.remove();
             if (drivable == curDrivable) {
                 break;
             }
