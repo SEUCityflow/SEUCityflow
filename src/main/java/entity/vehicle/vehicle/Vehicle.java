@@ -235,8 +235,9 @@ public class Vehicle {
             Vehicle candidateLeader;
             double candidateGap;
             double dis = controllerInfo.drivable.getLength() - controllerInfo.dis;  // 距 lane 首距离
+            int cnt = 0;
             while (true) {  // 在未来将驶向的 drivable 内搜寻 leader
-                drivable = getNextDrivable();
+                drivable = getNextDrivable(cnt++);
                 if (drivable == null) { // 已到 route 末尾，则无 leader
                     return;
                 }
