@@ -28,12 +28,12 @@ public class Road {
             double width = endIntersection.getWidth();
             Point p1 = roadPoints.get(roadPoints.size() - 2);
             Point p2 = roadPoints.get(roadPoints.size() - 1);
-            roadPoints.set(roadPoints.size() - 1, p1.plus(p2.minus(p1).unit().multiply(width)));
+            roadPoints.set(roadPoints.size() - 1, p2.minus(p2.minus(p1).unit().multiply(width)));
         }
         for (Lane lane : lanes) {
             double dmin = dsum;
             double dmax = dsum + lane.getWidth();
-            List<Point> lanePoints = new ArrayList<Point>();
+            List<Point> lanePoints = new ArrayList<>();
             for (int i = 0; i < roadPoints.size(); i++ ) {
                 Point u;
                 if (i == 0) {
@@ -56,8 +56,8 @@ public class Road {
     }
 
     public Road() {
-        lanes = new ArrayList<Lane>();
-        points = new ArrayList<Point>();
+        lanes = new ArrayList<>();
+        points = new ArrayList<>();
         planeRouteBuffer = new LinkedList<>();
     }
 
