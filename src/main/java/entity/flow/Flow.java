@@ -35,7 +35,7 @@ public class Flow {
 
     // 每个 timeInterval 对 flow 进行的操作
     public void nextStep(double timeInterval) {
-        if (!valid || endTime != -1 && currentTime > endTime) {// route 不可达 或已结束
+        if (!valid || endTime != -1 && currentTime > endTime) {// route 不可达或已结束
             return;
         }
         if (currentTime >= startTime) {   // 可开始
