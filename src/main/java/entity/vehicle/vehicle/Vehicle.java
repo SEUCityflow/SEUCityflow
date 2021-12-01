@@ -882,7 +882,7 @@ public class Vehicle {
         // add routing info
         StringBuilder route = new StringBuilder();
         for (Road r : controllerInfo.router.getFollowingRoads()) {
-            route.append(road.getId()).append(" ");
+            route.append(r.getId()).append(" ");
         }
         info.put("route", route.toString());
 
