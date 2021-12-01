@@ -1,8 +1,8 @@
 package util;
 
 public class Barrier {
-    private int m_threads;
-    private int[] counter;
+    private final int m_threads;
+    private final int[] counter;
     private int currCounter;
 
     public Barrier(int nb_threads) {
@@ -11,7 +11,6 @@ public class Barrier {
         currCounter = 0;
         assert (m_threads != 0);
         counter[0] = m_threads;
-        counter[1] = 0;
     }
 
     public synchronized void Wait() {
