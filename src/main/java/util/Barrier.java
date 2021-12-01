@@ -23,7 +23,6 @@ public class Barrier {
                 this.notifyAll();
             } else {
                 this.wait();
-                //System.out.println("aaa");
             }
         } catch (Exception e) {
             e.printStackTrace();
