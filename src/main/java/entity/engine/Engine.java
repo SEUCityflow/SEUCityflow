@@ -1025,8 +1025,8 @@ public class Engine {
     }
 
 
-    public static void main(String[] args) {
-        String configFile = "configFile.json";
-        Engine engine = new Engine(configFile, 10);
-    }
+//    public static void main(String[] args) {
+//        String configFile = "configFile.json";
+//        Engine engine = new Engine(configFile, 10);
+//    }
 }
