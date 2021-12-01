@@ -44,8 +44,8 @@ public class RoadNet {
     }
 
     private void loadPoints(JSONArray pointValues, List<Point> points) throws Exception {
-        for (int p = 0; p < pointValues.size(); p++) {
-            JSONObject curPoint = pointValues.getJSONObject(p);
+        for (int i = 0; i < pointValues.size(); i++) {
+            JSONObject curPoint = pointValues.getJSONObject(i);
             double x = getDoubleFromJsonObject(curPoint, "x");
             double y = getDoubleFromJsonObject(curPoint, "y");
             points.add(new Point(x, y));
@@ -77,6 +77,7 @@ public class RoadNet {
             laneLink.setStartLane(startLane);
             laneLink.setEndLane(endLane);
             laneLink.setRoadLink(roadLink);
+            startLane.getLaneLinks().add(laneLink);
             loadLaneLinks(curLaneLink, laneLink);
         }
     }
@@ -96,7 +97,7 @@ public class RoadNet {
             JSONObject curLightPhase = lightPhaseValues.getJSONObject(i);
             LightPhase lightPhase = new LightPhase();
             trafficLight.getPhases().add(lightPhase);
-            for (int j = 0; j <= trafficLight.getIntersection().getRoadLinks().size(); j++) {
+            for (int j = 0; j < trafficLight.getIntersection().getRoadLinks().size(); j++) {
                 lightPhase.getRoadLinkAvailable().add(false);
             }
             loadLightPhase(curLightPhase, lightPhase);
@@ -187,7 +188,6 @@ public class RoadNet {
         JSONArray intersectionValues = getJsonMemberArray(jsonObject, "intersections");
         JSONArray roadValues = getJsonMemberArray(jsonObject, "roads");
         buildMapping(intersectionValues, roadValues);
-        System.out.println(roadValues.size());
         //roads
         for (int i = 0; i < roadValues.size(); i++) {
             JSONObject curRoadValue = roadValues.getJSONObject(i);
@@ -266,6 +266,7 @@ public class RoadNet {
         }
     }
 
+
     @Override
     public String toString() {
         return "RoadNet{" +
@@ -278,5 +279,13 @@ public class RoadNet {
                 ", laneLinks=" + laneLinks.size() +
                 ", drivables=" + drivables.size() +
                 '}';
+    }
+
+    public List<Drivable> getDrivables() {
+        return drivables;
+    }
+
+    public void setDrivables(List<Drivable> drivables) {
+        this.drivables = drivables;
     }
 }
