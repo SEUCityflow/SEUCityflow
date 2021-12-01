@@ -22,17 +22,15 @@ import static util.JsonRelate.*;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
-
 
 class ThreadControl implements Runnable {
-    private Engine engine;
+    private final Engine engine;
     private Barrier startBarrier;
     private Barrier endBarrier;
-    private Set<Vehicle> vehicles;
-    private List<Road> roads;
-    private List<Intersection> intersections;
-    private List<Drivable> drivables;
+    private final Set<Vehicle> vehicles;
+    private final List<Road> roads;
+    private final List<Intersection> intersections;
+    private final List<Drivable> drivables;
 
     public ThreadControl(Engine engine, Barrier startBarrier, Barrier endBarrier, Set<Vehicle> vehicles, List<Road> roads, List<Intersection> intersections, List<Drivable> drivables) {
         this.engine = engine;
@@ -122,6 +120,7 @@ class ThreadControl implements Runnable {
                 }
             }
         }
+
         endBarrier.Wait();
     }
 
@@ -133,7 +132,7 @@ class ThreadControl implements Runnable {
                 engine.vehicleControl(vehicle, buffer); //计算speed、dis等信息
             }
         }
-        synchronized (this) {
+        synchronized (engine) {
             engine.getPushBuffer().addAll(buffer);
         }
         endBarrier.Wait();
@@ -142,13 +141,14 @@ class ThreadControl implements Runnable {
     private void threadUpdateLocation(List<Drivable> drivables) {
         startBarrier.Wait();
         for (Drivable drivable : drivables) {
-            List<Vehicle> vehicles = drivable.getVehicles();
-            for (Vehicle vehicle : vehicles) {
+            ListIterator<Vehicle> vehicleListIterator = drivable.getVehicles().listIterator();
+            while (vehicleListIterator.hasNext()) {
+                Vehicle vehicle = vehicleListIterator.next();
                 if (vehicle.getChangedDrivable() != null || vehicle.hasSetEnd()) { // 该车已移动到下一个 drivable 或 finishChange 或 abortChange
-                    vehicles.remove(vehicle);
+                    vehicleListIterator.remove();
                 }
                 if (vehicle.hasSetEnd()) { // 已跑完 route 或 vehicle.finishChange 或 shadow.abortChange，此时 vehicle 将被 delete
-                    synchronized (this) {
+                    synchronized (engine) {
                         engine.getVehicleRemoveBuffer().add(vehicle);
                         /*if(!vehicle.getLaneChange().hasFinished){
                             vehicleMap.erase(vehicle->getId());
@@ -167,6 +167,7 @@ class ThreadControl implements Runnable {
     }
 
     private void threadUpdateAction(Set<Vehicle> vehicles) { // vehicle 信息更新
+        startBarrier.Wait();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning()) {
                 if (engine.getVehicleRemoveBuffer().contains(vehicle.getBufferBlocker())) {
@@ -219,7 +220,7 @@ public class Engine {
     private List<Pair<Vehicle, Double>> pushBuffer;
     private List<Vehicle> VehicleRemoveBuffer;
     private List<Runnable> threadPool;
-    ExecutorService threadExcutor;
+    ExecutorService threadExecutor;
 
     private RoadNet roadNet;
     private int threadNum;
@@ -246,6 +247,19 @@ public class Engine {
 
     private boolean loadRoadNet(String jsonFile) throws Exception {
         roadNet.loadFromJson(jsonFile);
+        int cnt = 0;
+        for (Road road : roadNet.getRoads()) {
+            threadRoadPool.get(cnt).add(road);
+            cnt = (cnt + 1) % threadNum;
+        }
+        for (Intersection intersection : roadNet.getIntersections()) {
+            threadIntersectionPool.get(cnt).add(intersection);
+            cnt = (cnt + 1) % threadNum;
+        }
+        for (Drivable drivable : roadNet.getDrivables()) {
+            threadDrivablePool.get(cnt).add(drivable);
+            cnt = (cnt + 1) % threadNum;
+        }
         return true;
     }
 
@@ -301,8 +315,14 @@ public class Engine {
             dir = getStringFromJsonObject(configValues, "dir");
             String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
             String flowFile = getStringFromJsonObject(configValues, "flowFile");
-            loadRoadNet(dir + roadNetFile);
-            loadFlow(dir + flowFile);
+            if (!loadRoadNet(dir + roadNetFile)) {
+                System.out.println("load roadNet error");
+                return false;
+            }
+            if (!loadFlow(dir + flowFile)) {
+                System.out.println("load flow error");
+                return false;
+            }
             if (warnings) {
                 checkWarning();
             }
@@ -348,7 +368,6 @@ public class Engine {
         /*if(laneChange){
 
         }*/
-
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {// 发生 drivable 变动且此时尚未到达 end
             Pair<Vehicle, Double> pair = new Pair<>(vehicle, vehicle.getBufferDis());
             buffer.add(pair);
@@ -368,7 +387,6 @@ public class Engine {
                     if (flow != null) {
                         flow.setValid(false);
                     }
-
                     //remove this vehicle
                     Pair<Vehicle, Integer> pair = vehiclePool.get(vehicle.getPriority());
                     threadVehiclePool.get(pair.getValue()).remove(vehicle);
@@ -438,8 +456,7 @@ public class Engine {
             Point pos = vehicle.getPoint();
             Point dir = getDirectionByDistance(vehicle.getCurDrivable().getPoints(), vehicle.getCurDis());
             int lc = 0;
-            //          int lc = vehicle.lastLaneChangeDirection();
-            stringBuilder.append(pos.x).append(" ").append(pos.y).append(Math.atan2(dir.y, dir.x)).append(" ").append(vehicle.getId()).append(" ").append(lc).append(" ").append(vehicle.getLen()).append(" ").append(vehicle.getWidth()).append(",");
+            stringBuilder.append(pos.x).append(" ").append(pos.y).append(" ").append(Math.atan2(dir.y, dir.x)).append(" ").append(vehicle.getId()).append(" ").append(lc).append(" ").append(vehicle.getLen()).append(" ").append(vehicle.getWidth()).append(",");
         }
         stringBuilder.append(";");
         for (Road road : roadNet.getRoads()) {
@@ -461,8 +478,9 @@ public class Engine {
                 }
                 stringBuilder.append(can_go ? " g" : " r");
             }
-            stringBuilder.append(";");
+            stringBuilder.append(",");
         }
+        stringBuilder.append("\n");
         logOut.write(String.valueOf(stringBuilder));
     }
 
@@ -489,12 +507,6 @@ public class Engine {
     private void notifyCross() {
         startBarrier.Wait();
         endBarrier.Wait();
-    }
-
-    public Engine() {
-        rnd = new Random();
-        roadNet = new RoadNet();
-        flows = new ArrayList<>();
     }
 
     public Engine(String configFile, int threadNum) {
@@ -531,26 +543,40 @@ public class Engine {
         if (!success) {
             System.out.println("load config failed!");
         }
-        threadExcutor = Executors.newCachedThreadPool();
+        threadExecutor = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNum; i++) {
-            threadExcutor.execute(threadPool.get(i));
+            threadExecutor.execute(threadPool.get(i));
         }
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        logOut.close();
+    public void close() {
+        try {
+            logOut.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         finished = true;
-        System.out.println(12);
         for (int i = 0; i < (laneChange ? 9 : 6); i++) {
             startBarrier.Wait();
             endBarrier.Wait();
-            System.out.println(3);
         }
+        threadExecutor.shutdown();
         System.out.println("end");
-        threadExcutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-        super.finalize();
     }
+
+//    @Override
+//    protected void finalize() throws Throwable {
+//        logOut.close();
+//        finished = true;
+//        for (int i = 0; i < (laneChange ? 9 : 6); i++) {
+//            startBarrier.Wait();
+//            endBarrier.Wait();
+//        }
+//        threadExcutor.shutdown();
+//        System.out.println("end");
+////        threadExcutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+//        super.finalize();
+//    }
 
     public boolean checkPriority(int priority) {
         return vehiclePool.get(priority) != null;
@@ -571,7 +597,12 @@ public class Engine {
         updateAction();
         updateLeaderAndGap();
         if (!rlTrafficLight) {
-
+            for (Intersection intersection : roadNet.getIntersections()) {
+                if (intersection.isVirtual()) {
+                    continue;
+                }
+                intersection.getTrafficLight().passTime(interval);
+            }
         }
         if (saveReplay) {
             try {
@@ -601,9 +632,9 @@ public class Engine {
 
         step = 0;
         activeVehicleCount = 0;
-        /*if (resetRnd) {
-            rnd.seed(seed);
-        }*/
+        if (resetRnd) {
+            rnd.setSeed(seed);
+        }
         //problem
 
     }
@@ -613,7 +644,7 @@ public class Engine {
     }
 
     public void pushVehicle(Vehicle vehicle, boolean pushToDrivable) {
-        int threadIndex = getRnd().nextInt() % threadNum;
+        int threadIndex = getRnd().nextInt(threadNum);
         vehiclePool.put(vehicle.getPriority(), new Pair<>(vehicle, threadIndex));
         vehicleMap.put(vehicle.getId(), vehicle);
         threadVehiclePool.get(threadIndex).add(vehicle);
