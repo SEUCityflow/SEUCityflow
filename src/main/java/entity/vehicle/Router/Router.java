@@ -29,7 +29,7 @@ public class Router {
     private int selectLaneIndex(Lane curLane, List<Lane> lanes) {
         assert (lanes.size() > 0);
         if (curLane == null) {  // 当前未入 lane，随机选择备选 lane
-            return rnd.nextInt() % lanes.size();
+            return rnd.nextInt(lanes.size()) % lanes.size();
         }
         // 已在 lane 上则选择最相邻的 lane
         int laneDiff = Integer.MAX_VALUE;
@@ -113,7 +113,6 @@ public class Router {
                 }
                 if (nowDis == null || newDis < nowDis) {
                     from.put(adjRoad, curRoad);
-                    dis.put(adjRoad, newDis);
                     queue.add(new Pair<>(adjRoad, newDis));
                 }
             }
@@ -137,6 +136,7 @@ public class Router {
         this.rnd = other.rnd;
         this.iCurRoad = this.route.listIterator();
         planned = new LinkedList<>();
+        type = other.type;
     }
 
     public Router(Vehicle vehicle, Route route, Random rnd) {
@@ -212,7 +212,6 @@ public class Router {
                 Road nextTwoRoad = tmpCurRoadIter.next();
                 // 由 route[i] 到 route[i+1] 的 laneLink
                 List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoad);
-                tmpCurRoad = tmpCurRoadIter.next();
                 List<LaneLink> candidateLaneLinks = new ArrayList<>();
                 for (LaneLink laneLink : laneLinks) {
                     Lane nextLane = laneLink.getEndLane();
@@ -230,14 +229,14 @@ public class Router {
     public void update() {
         Drivable curDrivable = vehicle.getCurDrivable();
         if (curDrivable.isLane()) {
-            while (iCurRoad.hasNext() && ((Lane) curDrivable).getBeLongRoad() != iCurRoad.next());
+            while (iCurRoad.hasNext() && ((Lane) curDrivable).getBeLongRoad() != iCurRoad.next()) ;
             iCurRoad.previous();
             assert (iCurRoad.hasNext());
-            for (Drivable drivable : planned) {
-                planned.remove(drivable);
-                if (drivable == curDrivable) {
-                    break;
-                }
+        }
+        for (Drivable drivable : planned) {
+            planned.remove(drivable);
+            if (drivable == curDrivable) {
+                break;
             }
         }
     }
@@ -271,7 +270,6 @@ public class Router {
                 chosen = lane;
             }
         }
-        assert (chosen.getBeLongRoad().equals(curLane.getBeLongRoad()));
         return chosen;
     }
 
@@ -279,7 +277,7 @@ public class Router {
     public boolean updateShortestPath() {
         // Dijkstra
         planned.clear();
-        route.clear();
+        route = new ArrayList<>();
         route.add(anchorPoints.get(0));
         for (int i = 1; i < anchorPoints.size(); i++) {
             if (anchorPoints.get(i - 1) == anchorPoints.get(i)) {
