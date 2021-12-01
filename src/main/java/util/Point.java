@@ -221,8 +221,8 @@ public class Point {
         }
         for (int i = 1; i < points.size(); i++) {
             double len = (points.get(i - 1).minus(points.get(i))).len();
-            if (dis > len) {
-                dis -= len;
+            if (distance > len) {
+                distance -= len;
             } else {
                 return points.get(i - 1).plus(points.get(i).minus(points.get(i - 1)).multiply(distance / len));
             }
