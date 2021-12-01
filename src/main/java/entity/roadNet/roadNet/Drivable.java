@@ -23,8 +23,8 @@ public abstract class Drivable {
     public abstract String getId();
 
     public Drivable() {
-        vehicles = new LinkedList<Vehicle>();
-        points = new ArrayList<Point>();
+        vehicles = new LinkedList<>();
+        points = new ArrayList<>();
     }
 
     public List<Vehicle> getVehicles() {
@@ -52,11 +52,11 @@ public abstract class Drivable {
     }
 
     public boolean isLane() {
-        return drivableType == DrivableType.LANELINK;
+        return drivableType == DrivableType.LANE;
     }
 
     public boolean isLaneLink() {
-        return drivableType == DrivableType.LANE;
+        return drivableType == DrivableType.LANELINK;
     }
 
     public Vehicle getFirstVehicle() {
