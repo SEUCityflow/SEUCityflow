@@ -8,6 +8,7 @@ import entity.vehicle.Router.Router;
 import javafx.util.Pair;
 import util.ControlInfo;
 import util.Point;
+
 import static util.Point.*;
 
 import java.util.HashMap;
@@ -86,7 +87,7 @@ class ControllerInfo {
     }
 }
 
-public class Vehicle implements Cloneable {
+public class Vehicle {
     private VehicleInfo vehicleInfo;
     private Buffer buffer;
     private ControllerInfo controllerInfo;
@@ -121,8 +122,9 @@ public class Vehicle implements Cloneable {
     }
 
     public Vehicle(VehicleInfo init, String id, Engine engine, Flow flow) {
-        vehicleInfo = init;
+        vehicleInfo = new VehicleInfo(init);
         controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd());
+        buffer = new Buffer();
         this.id = id;
         this.engine = engine;
         this.flow = flow;
@@ -169,7 +171,6 @@ public class Vehicle implements Cloneable {
 //        }
         return getPointByDistance(controllerInfo.drivable.getPoints(), controllerInfo.dis);
     }
-
 
     // TODO: use something like reflection?    buffer 信息导入 controllerInfo
     public void update() {
@@ -230,11 +231,11 @@ public class Vehicle implements Cloneable {
             controllerInfo.gap = leader.getCurDis() - leader.getLen() - controllerInfo.dis;
         } else {
             controllerInfo.leader = null;
-            Drivable drivable = null;
-            Vehicle candidateLeader = null;
-            double candidateGap = 0;
+            Drivable drivable;
+            Vehicle candidateLeader;
+            double candidateGap;
             double dis = controllerInfo.drivable.getLength() - controllerInfo.dis;  // 距 lane 首距离
-            for (int i = 0; ; ++i) {  // 在未来将驶向的 drivable 内搜寻 leader
+            while (true) {  // 在未来将驶向的 drivable 内搜寻 leader
                 drivable = getNextDrivable();
                 if (drivable == null) { // 已到 route 末尾，则无 leader
                     return;
@@ -287,8 +288,7 @@ public class Vehicle implements Cloneable {
             return hasSetCustomSpeed() ? buffer.customSpeed : vehicleInfo.maxSpeed;  // 习惯速度/上限速度
         }
 
-        double v = getNoCollisionSpeed(leader.getSpeed(), leader.getMaxNegAcc(), vehicleInfo.speed, vehicleInfo.maxNegAcc, controllerInfo.gap, interval,
-                0); // 极端情况下制动无碰撞
+        double v = getNoCollisionSpeed(leader.getSpeed(), leader.getMaxNegAcc(), vehicleInfo.speed, vehicleInfo.maxNegAcc, controllerInfo.gap, interval, 0); // 极端情况下制动无碰撞
 
         if (hasSetCustomSpeed())
             return Math.min(buffer.customSpeed, v); // 有习惯速度则以习惯速度
@@ -378,21 +378,16 @@ public class Vehicle implements Cloneable {
     public ControlInfo getNextSpeed(double interval) {
         ControlInfo controlInfo = new ControlInfo();
         Drivable drivable = controllerInfo.drivable;
-        double v = vehicleInfo.maxSpeed;                                         // 上限速度
+        double v = vehicleInfo.maxSpeed;                                    // 上限速度
         v = Math.min(v, vehicleInfo.speed + vehicleInfo.maxPosAcc * interval); // TODO: random??? 当前速度能加到的最快速度
-
         v = Math.min(v, drivable.getMaxSpeed()); // 道路限速
-
         // car follow
         v = Math.min(v, getCarFollowSpeed(interval)); // 跟随速度
-
         if (isIntersectionRelated()) {
             v = Math.min(v, getIntersectionRelatedSpeed(interval)); // 过 intersection 速度
         }
-
-        v = Math.min(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval); // 能减到的最小速度
+        v = Math.max(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval); // 能减到的最小速度
         controlInfo.speed = v;
-
         return controlInfo;
     }
 
@@ -403,7 +398,7 @@ public class Vehicle implements Cloneable {
         LaneLink laneLink = null;
         if (nextDrivable != null && nextDrivable.isLaneLink()) { // 即将进入 intersection
             laneLink = (LaneLink) nextDrivable;
-            if (!laneLink.isAvailable() || !laneLink.getEndLane().canEnter(this)) { // not only the first vehicle should follow intersection logic  由于红灯或 endLane 车辆过多而不可通行
+            if (!laneLink.isAvailable() || !laneLink.getEndLane().canEnter(this)) { // not only the first vehicle should follow intersection logic  由于红灯或 endLane 车辆过多而不可通
                 if (getMinBrakeDistance() > controllerInfo.drivable.getLength() - controllerInfo.dis) { // 无法在线前刹车
                     // TODO: what if it cannot brake before red light?
                 } else {
@@ -415,18 +410,19 @@ public class Vehicle implements Cloneable {
                 v = Math.min(v, vehicleInfo.turnSpeed); // TODO: define turn speed
             }
         }
-        if (laneLink == null && controllerInfo.drivable.isLaneLink())      // 已在 intersection
+        if (laneLink == null && controllerInfo.drivable.isLaneLink()) {// 已在 intersection
             laneLink = (LaneLink) (controllerInfo.drivable); // 获取当前 laneLink
+        }
         double distanceToLaneLinkStart = controllerInfo.drivable.isLane() ? -(controllerInfo.drivable.getLength() - controllerInfo.dis)
                 : controllerInfo.dis; // vehicle 距离 laneLink start 的 距离 <0 表示在 laneLink 前，>0 在 laneLink 后
         double distanceOnLaneLink;
+        assert laneLink != null;
         for (Cross cross : laneLink.getCrosses()) {                 // 对当前 laneLink 上每个 cross
             distanceOnLaneLink = cross.getDistanceByLane(laneLink); // cross 距 laneLink 起点距离
             if (distanceOnLaneLink < distanceToLaneLinkStart)        // 车头已过此 cross，说明先前已对当前 cross 进行了 canPass 判断，无需再考虑
                 continue;
             if (!cross.canPass(this, laneLink, distanceToLaneLinkStart)) { // 当前不可通过
-                v = Math.min(v, getStopBeforeSpeed(distanceOnLaneLink - distanceToLaneLinkStart - vehicleInfo.yieldDistance,
-                        interval)); // TODO: headway distance  能停下的话经过 interval 时间的速度
+                v = Math.min(v, getStopBeforeSpeed(distanceOnLaneLink - distanceToLaneLinkStart - vehicleInfo.yieldDistance, interval)); // TODO: headway distance  能停下的话经过 interval 时间的速度
                 setBlocker(cross.getFoeVehicle(laneLink));      // 被 block
                 break;
             }
@@ -451,7 +447,6 @@ public class Vehicle implements Cloneable {
     public boolean changeRoute(List<Road> anchor) {
         return controllerInfo.router.changeRoute(anchor);
     }
-
 
     public Drivable getNextDrivable(int i) {
         return controllerInfo.router.getNextDrivable(i);
@@ -885,11 +880,11 @@ public class Vehicle implements Cloneable {
             info.put("intersection", road.getEndIntersection().getId());
         }
         // add routing info
-        String route = "";
+        StringBuilder route = new StringBuilder();
         for (Road r : controllerInfo.router.getFollowingRoads()) {
-            route += road.getId() + " ";
+            route.append(road.getId()).append(" ");
         }
-        info.put("route", route);
+        info.put("route", route.toString());
 
         return info;
     }
