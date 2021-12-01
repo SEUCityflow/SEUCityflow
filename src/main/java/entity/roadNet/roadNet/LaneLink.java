@@ -13,6 +13,7 @@ public class LaneLink extends Drivable{
         super();
         crosses = new ArrayList<>();
         drivableType = DrivableType.LANELINK;
+        maxSpeed = 1000; //TODO
     }
 
     @Override
