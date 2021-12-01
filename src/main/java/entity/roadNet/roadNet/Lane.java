@@ -99,7 +99,7 @@ public class Lane extends  Drivable{
     }
 
     public List<LaneLink> getLaneLinksToRoad(Road road) {
-        List<LaneLink> ret = new ArrayList<LaneLink>();
+        List<LaneLink> ret = new ArrayList<>();
         for(LaneLink laneLink : laneLinks) {
             if (laneLink.getEndLane().getBeLongRoad() == road) {
                 ret.add(laneLink);
@@ -161,7 +161,7 @@ public class Lane extends  Drivable{
     }
 
     public List<Vehicle> getVehiclesBeforeDistance(double dis, int segmentIndex, double deltaDis)  {
-        List<Vehicle> ret = new ArrayList<Vehicle>();
+        List<Vehicle> ret = new ArrayList<>();
         for (int i = segmentIndex; i >= 0; i--) {
             Segment segment = getSegment(i);
             List<Vehicle> vehicles = segment.getVehicles();
@@ -218,11 +218,51 @@ public class Lane extends  Drivable{
         historyAverageSpeed = historyVehicleNum != 0 ? speedSum / historyVehicleNum : 0;
     }
 
-    public int getHistoryVehicleNum()  {
+    public int getHistoryVehicleNum() {
         return historyVehicleNum;
     }
 
-    public double getHistoryAverageSpeed()  {
+    public double getHistoryAverageSpeed() {
         return historyAverageSpeed;
+    }
+
+    public void setLaneIndex(int laneIndex) {
+        this.laneIndex = laneIndex;
+    }
+
+    public void setSegments(List<Segment> segments) {
+        this.segments = segments;
+    }
+
+    public void setLaneLinks(List<LaneLink> laneLinks) {
+        this.laneLinks = laneLinks;
+    }
+
+    public Road getBelongRoad() {
+        return belongRoad;
+    }
+
+    public void setBelongRoad(Road belongRoad) {
+        this.belongRoad = belongRoad;
+    }
+
+    public void setWaitingBuffer(List<Vehicle> waitingBuffer) {
+        this.waitingBuffer = waitingBuffer;
+    }
+
+    public List<HistoryRecord> getHistory() {
+        return history;
+    }
+
+    public void setHistory(List<HistoryRecord> history) {
+        this.history = history;
+    }
+
+    public void setHistoryVehicleNum(int historyVehicleNum) {
+        this.historyVehicleNum = historyVehicleNum;
+    }
+
+    public void setHistoryAverageSpeed(double historyAverageSpeed) {
+        this.historyAverageSpeed = historyAverageSpeed;
     }
 }
