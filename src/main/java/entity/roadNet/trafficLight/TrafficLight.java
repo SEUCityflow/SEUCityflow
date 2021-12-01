@@ -41,12 +41,9 @@ public class TrafficLight {
     }
 
     public void passTime(double seconds) { // 时间过了 seconds
-        if (intersection.isVirtual()) {
-            return;
-        }
         remainDuration -= seconds;
         while (remainDuration <= 0.0) {
-            curPhaseIndex = (curPhaseIndex + 1) % (int)phases.size();
+            curPhaseIndex = (curPhaseIndex + 1) % phases.size();
             remainDuration += phases.get(curPhaseIndex).getTime();
         }
     }
