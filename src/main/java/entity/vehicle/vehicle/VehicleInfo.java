@@ -4,7 +4,7 @@ import entity.flow.Route;
 
 public class VehicleInfo {
     public double speed = 0;
-    public double len = 0;
+    public double len = 5;
     public double width = 2;
     public double maxPosAcc = 4.5;
     public double maxNegAcc = 4.5;
