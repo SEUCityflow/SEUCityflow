@@ -123,29 +123,30 @@ public class Lane extends  Drivable{
 
     public void buildSegmentation(int numSegments)  {
         for (int i = 0; i < numSegments; i++) {
-            Segment segment = new Segment();
-            segment.setIndex(i);
-            segment.setBelongLane(this);
-            segment.setStartPos(i * length / numSegments);
-            segment.setEndPos((i + 1) * length / numSegments);
+            Segment segment = new Segment(i, this, i * length / numSegments, (i + 1) * length / numSegments);
             segments.add(i, segment);
         }
     }
 
-    public void initSegments()  {
-//        Iterator<Vehicle> iter = vehicles.iterator();
-//        for (int i = segments.size() - 1; i >= 0; i--) {
-//            Segment segment = segments.get(i);
-//            segment.setVehicles(new ArrayList<Vehicle>());
-//            while (iter.hasNext()) {
-//                Vehicle vehicle = iter.next();
-//                if (vehicle.getCurDis() >= segment.getStartPos()) {
-//                    segment.getVehicles().add(vehicle);
-//                    //vehicle.setSegmentIndex(segment.getIndex());
-//                    break;
-//                }
-//            }
-//        }
+    public void initSegments() {
+        ListIterator<Vehicle> iter = vehicles.listIterator();
+        int start = 0;
+        int end = 0;
+        for (int i = segments.size() - 1; i >= 0; i--) {
+            Segment segment = segments.get(i);
+            while (iter.hasNext()) {
+                Vehicle vehicle = iter.next();
+                if (vehicle.getCurDis() >= segment.getStartPos()) {
+                    end++;
+                    vehicle.setSegmentIndex(i);
+                } else {
+                    iter.previous();
+                    break;
+                }
+            }
+            segment.setVehicles(new LinkedList<>(vehicles.subList(start, end)));
+            start = end;
+        }
     }
 
     public Segment getSegment(int index)  {
@@ -164,8 +165,8 @@ public class Lane extends  Drivable{
         List<Vehicle> ret = new ArrayList<>();
         for (int i = segmentIndex; i >= 0; i--) {
             Segment segment = getSegment(i);
-            List<Vehicle> vehicles = segment.getVehicles();
-            for (Vehicle vehicle : vehicles) {
+            List<Vehicle> list = segment.getVehicles();
+            for (Vehicle vehicle : list) {
                 if (vehicle.getCurDis() < dis - deltaDis) {
                     return ret;
                 }
@@ -177,10 +178,11 @@ public class Lane extends  Drivable{
         return ret;
     }
 
-    public Vehicle getVehicleBeforeDistance(double dis, int segmentIndex)  {
-        for (int i = segmentIndex; i>= 0; i--) {
-            List<Vehicle> vehicles = getSegment(i).getVehicles();
-            for (Vehicle vehicle : vehicles) {
+    public Vehicle getVehicleBeforeDistance(double dis, int segmentIndex) {
+        for (int i = segmentIndex; i >= 0; i--) {
+            Segment segment = getSegment(i);
+            List<Vehicle> list = segment.getVehicles();
+            for (Vehicle vehicle : list) {
                 if (vehicle.getCurDis() < dis) {
                     return vehicle;
                 }
@@ -191,8 +193,11 @@ public class Lane extends  Drivable{
 
     public Vehicle getVehicleAfterDistance(double dis, int segmentIndex)  {
         for (int i = segmentIndex; i < getSegmentNum(); i++) {
-            List<Vehicle> vehicles = getSegment(i).getVehicles();
-            for (Vehicle vehicle : vehicles) {
+            Segment segment = getSegment(i);
+            List<Vehicle> list = segment.getVehicles();
+            ListIterator<Vehicle> iter = list.listIterator(list.size());
+            while (iter.hasPrevious()) {
+                Vehicle vehicle = iter.previous();
                 if (vehicle.getCurDis() >= dis) {
                     return vehicle;
                 }
