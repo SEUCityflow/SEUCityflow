@@ -5,16 +5,16 @@ import entity.flow.Flow;
 import entity.flow.Route;
 import entity.roadNet.roadNet.*;
 import entity.vehicle.Router.Router;
+import entity.vehicle.laneChange.LaneChange;
+import entity.vehicle.laneChange.Signal;
+import entity.vehicle.laneChange.SimpleLaneChange;
 import javafx.util.Pair;
 import util.ControlInfo;
 import util.Point;
 
 import static util.Point.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 class Buffer {
     boolean isDisSet;
@@ -36,6 +36,29 @@ class Buffer {
     double customSpeed;
     double deltaDis;
 
+    Buffer() {
+    }
+
+    Buffer(Buffer buffer) {
+        isDisSet = buffer.isDisSet;
+        isSpeedSet = buffer.isSpeedSet;
+        isDrivableSet = buffer.isDrivableSet;
+        isNotifiedVehicles = buffer.isNotifiedVehicles;
+        isEndSet = buffer.isEndSet;
+        isEnterLaneLinkTimeSet = buffer.isEnterLaneLinkTimeSet;
+        isBlockerSet = buffer.isBlockerSet;
+        isCustomSpeedSet = buffer.isCustomSpeedSet;
+
+        dis = buffer.dis;
+        speed = buffer.speed;
+        drivable = buffer.drivable;
+        notifiedVehicles = buffer.notifiedVehicles;
+        end = buffer.end;
+        enterLaneLinkTime = buffer.enterLaneLinkTime;
+        blocker = buffer.blocker;
+        customSpeed = buffer.customSpeed;
+        deltaDis = buffer.deltaDis;
+    }
 }
 
 class ControllerInfo {
@@ -76,14 +99,26 @@ class ControllerInfo {
         drivable = other.drivable;
         prevDrivable = other.prevDrivable;
         approachingIntersectionDistance = other.approachingIntersectionDistance;
-        gap = other.gap;
         enterLaneLinkTime = other.enterLaneLinkTime;
-        leader = other.leader;
         blocker = other.blocker;
         end = other.end;
         running = other.running;
-        router = other.router;
+        router = new Router(other.router);
         router.setVehicle(vehicle);
+    }
+}
+
+class LaneChangeInfo {
+    int partnerType;
+    Vehicle partner;
+    double offSet;
+    int segmentIndex;
+
+    LaneChangeInfo() {
+    }
+
+    LaneChangeInfo(LaneChangeInfo laneChangeInfo) {
+        segmentIndex = laneChangeInfo.segmentIndex;
     }
 }
 
@@ -91,6 +126,8 @@ public class Vehicle {
     private VehicleInfo vehicleInfo;
     private Buffer buffer;
     private ControllerInfo controllerInfo;
+    private LaneChangeInfo laneChangeInfo;
+    private LaneChange laneChange;
     private int priority;
     private String id;
     private double enterTime;
@@ -107,18 +144,22 @@ public class Vehicle {
         engine = vehicle.engine;
         this.flow = flow;
         enterTime = vehicle.enterTime;
+        laneChangeInfo = vehicle.laneChangeInfo;
+        laneChange = new SimpleLaneChange(this, vehicle.laneChange);
     }
 
     // shadow 创建，除 laneChange（新建）和 flow（nullptr）与 router.vehicle 外全部一致
     public Vehicle(Vehicle vehicle, String id, Engine engine, Flow flow) {
         vehicleInfo = vehicle.vehicleInfo;
-        controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd());
-        buffer = vehicle.buffer;
-        this.id = vehicle.id;
+        controllerInfo = new ControllerInfo(this, vehicle.getControllerInfo());
+        buffer = new Buffer(vehicle.buffer);
+        this.id = id;
         this.engine = vehicle.engine;
         this.flow = flow;
         while (engine.checkPriority(priority = engine.getRnd().nextInt())) ;
         enterTime = vehicle.enterTime;
+        laneChangeInfo = new LaneChangeInfo(vehicle.laneChangeInfo);
+        laneChange = new SimpleLaneChange(this);
     }
 
     public Vehicle(VehicleInfo init, String id, Engine engine, Flow flow) {
@@ -131,6 +172,8 @@ public class Vehicle {
         controllerInfo.approachingIntersectionDistance = vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2;
         while (engine.checkPriority(priority = engine.getRnd().nextInt())) ;
         enterTime = engine.getCurrentTime();
+        laneChangeInfo = new LaneChangeInfo();
+        laneChange = new SimpleLaneChange(this);
     }
 
     // 由 dis 算出当前在哪条 drivable 上并更新 buffer
@@ -157,6 +200,10 @@ public class Vehicle {
     }
 
     // 如 drivable 改变则返回新的 drivable
+    public boolean isDrivableSet() {
+        return buffer.isDrivableSet;
+    }
+
     public Drivable getChangedDrivable() {
         if (!buffer.isDrivableSet) {
             return null;
@@ -166,10 +213,23 @@ public class Vehicle {
 
     // redo，获取 vehicle 当前坐标
     public Point getPoint() {
-//        if (controllerInfo.drivable.isLane()) {
-//            return controllerInfo.drivable.getPointByDistance(controllerInfo.dis);
-//        }
-        return getPointByDistance(controllerInfo.drivable.getPoints(), controllerInfo.dis);
+        if (Math.abs(getOffSet()) < eps || controllerInfo.drivable.isLaneLink()) {
+            return getPointByDistance(controllerInfo.drivable.getPoints(), controllerInfo.dis);
+        } else {
+            Lane lane = (Lane) controllerInfo.drivable;
+            Point origin = getPointByDistance(lane.getPoints(), controllerInfo.dis); // 未 laneChange 时位置
+            Point next;
+            double percentage;
+            List<Lane> lanes = lane.getBelongRoad().getLanes();
+            if (getOffSet() > 0) {                                                                             // 向外侧便宜
+                next = getPointByDistance(lanes.get(lane.getLaneIndex() + 1).getPoints(), controllerInfo.dis);                            // 外侧同距离位置
+                percentage = 2 * getOffSet() / (lane.getWidth() + lanes.get(lane.getLaneIndex() + 1).getWidth()); // 横向所占比例
+            } else {
+                next = getPointByDistance(lanes.get(lane.getLaneIndex() - 1).getPoints(), controllerInfo.dis);
+                percentage = -2 * getOffSet() / (lane.getWidth() + lanes.get(lane.getLaneIndex() - 1).getWidth());
+            }
+            return new Point(next.x * percentage + origin.x * (1 - percentage), next.y * percentage + origin.y * (1 - percentage));
+        }
     }
 
     // TODO: use something like reflection?    buffer 信息导入 controllerInfo
@@ -211,6 +271,10 @@ public class Vehicle {
         }
     }
 
+    public void updateRouter() {
+        controllerInfo.router.update();
+    }
+
     // 获取 vehicle 头尾坐标
     public Pair<Point, Point> getCurPos() {
         // 车头坐标
@@ -224,9 +288,9 @@ public class Vehicle {
         return new Pair<>(first, tail);
     }
 
-    // redo, 更新 leader 与 gap
+    // 更新 leader 与 gap
     public void updateLeaderAndGap(Vehicle leader) {
-        if (leader != null && leader.getCurDrivable().equals(getCurDrivable())) {  // 传入 leader 且和当前车在同一 lane
+        if (leader != null && leader.getCurDrivable() == getCurDrivable()) {  // 传入 leader 且和当前车在同一 lane
             controllerInfo.leader = leader;
             controllerInfo.gap = leader.getCurDis() - leader.getLen() - controllerInfo.dis;
         } else {
@@ -468,7 +532,108 @@ public class Vehicle {
         return 0.5 * vehicleInfo.speed * vehicleInfo.speed / vehicleInfo.usualNegAcc;
     }
 
+    // for laneChange
+    public void makeLaneChangeSignal(double interval) { // 交由 laneChange 创建 signalSend 并设置 signal 内各值并寻找目标 lane
+        laneChange.makeSignal(interval);
+    }
+
+    public boolean planLaneChange() { // 交由 laneChange 判断是否满足 laneChange 条件
+        return laneChange.planChange();
+    }
+
+    public void receiveSignal(Vehicle sender) {// laneChange signal 接收，按 priority 判断
+        if (laneChange.isChanging()) {// 当前车正在 langChange，无视
+            return;
+        }
+
+        Signal signal_recv = laneChange.getSignalRecv();                              // 之前接收的 signal
+        Signal signal_send = laneChange.getSignalSend();                               // 自己发送的 signal
+        int curPriority = signal_recv != null ? signal_recv.getSource().getPriority() : -1; // 获取之前 receiveSignal 来源 vehicle 的 priority
+        int newPriority = sender.getPriority();                                 // 当前 receiveSignal 来源 vehicle 的 priority
+
+        if ((signal_recv == null || curPriority < newPriority) && (signal_send == null || priority < newPriority)) { // （尚未接收 || sender 的优先级更高更高） && (自己未发 || sender 优先级更高)
+            laneChange.setSignalRecv(sender.laneChange.getSignalSend());
+        }
+    }
+
+    public void sendSignal() { // 交由 laneChange 向 targetLeader 和 targetFollower 传递信号
+        laneChange.sendSignal();
+    }
+
+    public void clearSignal() {
+        laneChange.clearSignal();
+    }
+
+    public void updateLaneChangeNeighbor() { // 交由 laneChange 寻找 laneChange 后的 leader 与 follower
+        laneChange.updateLeaderAndFollower();
+    }
+
+    public LaneChange getLaneChange() {
+        return laneChange;
+    }
+
+    public void insertShadow(Vehicle shadow) { // 交由 laneChange 将 shadow 插入 targetLane
+        laneChange.insertShadow(shadow);
+    }
+
+    public boolean onValidLane() { // 交由 router，当无下一条路且 route 未到末尾说明有误
+        return controllerInfo.router.onValidLane();
+    }
+
+    public Lane getValidLane() { // nextLane
+        assert (getCurDrivable().isLane());
+        return controllerInfo.router.getValidLane((Lane) (getCurDrivable()));
+    }
+
+    public boolean canChange() { // 交由 laneChange，自己发送了 signal 且未 receive 信号，如receive 说明 receive 信号优先级更高
+        return laneChange.canChange();
+    }
+
+    public double getGap() {
+        return controllerInfo.gap;
+    }
+
+    public int getLaneChangeUrgency() {
+        return laneChange.getSignalSendUrgency();
+    }
+
+    public Vehicle getTargetLeader() {
+        return laneChange.getTargetLeader();
+    }
+
+    public int getLastLaneChangeDirection() {
+        return laneChange.getLastDir();
+    }
+
+    public int getLaneChangeDirection() {
+        if (laneChange.getSignalSend() == null) {
+            return 0;
+        }
+        return laneChange.getSignalSend().getDirection();
+    }
+
+    public boolean isChanging() {
+        return laneChange.isChanging();
+    }
+
+    public double getMaxOffSet() { // 最大偏移量，大于此量表示完成 laneChange
+        Lane target = laneChange.getSignalSend().getTarget();
+        return (target.getWidth() + getCurLane().getWidth()) / 2;
+    }
+
+    public void abortLaneChange() {// 由 shadow 调用，终止 laneChange
+        setBufferEnd(true);
+        laneChange.abortChanging();
+    }
+
+    public void finishChanging() {
+        laneChange.finishChanging();
+        setBufferEnd(true);
+    }
+
+
     // 自身 set / get
+
     public VehicleInfo getVehicleInfo() {
         return vehicleInfo;
     }
@@ -864,6 +1029,71 @@ public class Vehicle {
 //    boolean setRoute(List<Road> anchor){
 //        return controllerInfo.router.setRoute(anchor);
 //    }
+
+    // laneChangeInfo set/get
+    public boolean isReal() {
+        return laneChangeInfo.partnerType != 2;
+    }
+
+    public void setPartnerType(int partnerType) {
+        laneChangeInfo.partnerType = partnerType;
+    }
+
+    public int getPartnerType() {
+        return laneChangeInfo.partnerType;
+    }
+
+    public boolean hasPartner() {
+        return laneChangeInfo.partnerType > 0;
+    }
+
+    public void setShadow(Vehicle vehicle) { // 自己是原 vehicle
+        laneChangeInfo.partnerType = 1;
+        laneChangeInfo.partner = vehicle;
+    }
+
+    public void setPartner(Vehicle vehicle) { // 自己是 shadow
+        laneChangeInfo.partner = vehicle;
+        if (vehicle != null) {
+            laneChangeInfo.partnerType = 2;
+        }
+    }
+
+    public void setLastChangeTime(double time) {
+        laneChange.setLastChangeTime(time);
+    }
+
+    public Vehicle getPartner() {
+        return laneChangeInfo.partner;
+    }
+
+    public int getSegmentIndex() {
+        return laneChangeInfo.segmentIndex;
+    }
+
+    public void setSegmentIndex(int i) {
+        laneChangeInfo.segmentIndex = i;
+    }
+
+    public void setOffSet(double offSet) {
+        laneChangeInfo.offSet = offSet;
+    }
+
+    public double getOffSet() {
+        return laneChangeInfo.offSet;
+    }
+
+    public LaneChangeInfo getLaneChangeInfo() {
+        return laneChangeInfo;
+    }
+
+    public void setLaneChangeInfo(LaneChangeInfo laneChangeInfo) {
+        this.laneChangeInfo = laneChangeInfo;
+    }
+
+    public void setLaneChange(LaneChange laneChange) {
+        this.laneChange = laneChange;
+    }
 
     // 对应 id 车辆信息获取 <title, info>
     Map<String, String> getInfo() {
