@@ -334,7 +334,7 @@ public class Router {
     }
 
 
-    private boolean onValidLane() {
+    public boolean onValidLane() {
         return !(getNextDrivable() == null && !onLastRoad());
     }
 
