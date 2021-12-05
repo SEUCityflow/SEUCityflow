@@ -10,6 +10,7 @@ import static util.Point.*;
 
 import java.util.*;
 
+import entity.vehicle.vehicle.VehicleInfo;
 import util.Point;
 import util.RoadNetSerialization;
 
@@ -201,16 +202,19 @@ public class RoadNet {
             loadIntersection(curInterValue, intersection);
         }
 
-        for (Intersection intersection: intersections) {
+        for (Intersection intersection : intersections) {
             intersection.initCrosses();
             laneLinks.addAll(intersection.getLaneLinks());
             drivables.addAll(intersection.getLaneLinks());
         }
-        for (Road road: roads) {
-            //road.buildSegmentationByInterval();
+
+        VehicleInfo vehicleInfo = new VehicleInfo();
+
+        for (Road road : roads) {
             lanes.addAll(road.getLanes());
             drivables.addAll(road.getLanes());
             road.initLanePoints();
+            road.buildSegmentationByInterval((vehicleInfo.len + vehicleInfo.minGap) * 10);
         }
         return true;
     }
@@ -252,10 +256,6 @@ public class RoadNet {
     public List<LaneLink> getLaneLinks()  {
         return laneLinks;
     }
-
-//    public List<Drivable> getDrivables()  {
-//        return drivables;
-//    }
 
     public void reset() {
         for (Road road : roads) {
