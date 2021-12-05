@@ -17,17 +17,6 @@ public class Flow {
     private String id;
     private boolean valid = true;
 
-    public Flow(VehicleInfo vehicleTemplate, double timeInterval, Engine engine, int startTime, int endTime, String id) {
-        this.vehicleTemplate = vehicleTemplate;
-        interval = timeInterval;
-        this.engine = engine;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.id = id;
-        assert (timeInterval >= 1 || (startTime == endTime));
-        nowTime = interval;
-    }
-
     public Flow() {
         vehicleTemplate = new VehicleInfo();
         route = new Route();
@@ -41,12 +30,6 @@ public class Flow {
         if (currentTime >= startTime) {   // 可开始
             while (nowTime >= interval) { // 距此 flow 上次进入 RoadNet 已超过 interval，可根据此 flow 再初始化一辆车放入
                 Vehicle vehicle = new Vehicle(vehicleTemplate, id + "_" + cnt++, engine, this);
-                // priority has been set correctlly before?
-//                int priority = vehicle.getPriority();
-//                while (engine.checkPriority(priority)) {
-//                    priority = engine.getRnd().nextInt();
-//                }
-//                vehicle.setPriority(priority);
                 engine.pushVehicle(vehicle, false);
                 vehicle.getFirstRoad().addPlanRouteVehicle(vehicle);
                 nowTime -= interval;
