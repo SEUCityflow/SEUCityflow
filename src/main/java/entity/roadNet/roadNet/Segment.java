@@ -2,20 +2,17 @@ package entity.roadNet.roadNet;
 
 import entity.vehicle.vehicle.Vehicle;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
-public class Segment { // 暂时不动，数据结构需修改
+public class Segment {
     private int index;
     private Lane belongLane;
     private double startPos;
     private double endPos;
     private List<Vehicle> vehicles;
-    private int curPos;
 
     public Segment() {
-        vehicles = new ArrayList<Vehicle>();
+        vehicles = new LinkedList<>();
     }
 
     public Segment(int index, Lane belongLane, double startPos, double endPos) {
@@ -23,7 +20,7 @@ public class Segment { // 暂时不动，数据结构需修改
         this.belongLane = belongLane;
         this.startPos = startPos;
         this.endPos = endPos;
-        vehicles = new ArrayList<Vehicle>();
+        vehicles = new LinkedList<>();
     }
 
     public double getStartPos() {
@@ -42,13 +39,8 @@ public class Segment { // 暂时不动，数据结构需修改
         return vehicles;
     }
 
-    public int findVehicle(Vehicle vehicle) {
-        for (int i = 0; i < vehicles.size(); i++) {
-            if (vehicles.get(i) == vehicle) {
-                return i;
-            }
-        }
-        return -1;
+    public void setVehicles(List<Vehicle> vehicles) {
+        this.vehicles = vehicles;
     }
 
     public void removeVehicle(Vehicle vehicle) {
@@ -56,12 +48,16 @@ public class Segment { // 暂时不动，数据结构需修改
     }
 
     public void insertVehicle(Vehicle vehicle) {
-        for (int i = 0; i < vehicles.size(); i++) {
-            if (vehicles.get(i).getCurDis() <= vehicle.getCurDis()) {
-                vehicles.add(i, vehicle);
+        ListIterator<Vehicle> iterator = vehicles.listIterator();
+        while (iterator.hasNext()) {
+            Vehicle nowVehicle = iterator.next();
+            if (vehicle.getCurDis() > nowVehicle.getCurDis()) {
+                iterator.previous();
+                iterator.add(vehicle);
                 return;
             }
         }
+        iterator.add(vehicle);
     }
 
     public void setIndex(int index) {
@@ -84,15 +80,4 @@ public class Segment { // 暂时不动，数据结构需修改
         this.endPos = endPos;
     }
 
-    public void setVehicles(List<Vehicle> vehicles) {
-        this.vehicles = vehicles;
-    }
-
-    public int getCurPos() {
-        return curPos;
-    }
-
-    public void setCurPos(int curPos) {
-        this.curPos = curPos;
-    }
 }
