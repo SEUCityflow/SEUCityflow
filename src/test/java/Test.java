@@ -5,6 +5,7 @@ public class Test {
         Engine engine = new Engine("src/test/resources/config.json", 5);
         System.out.println("load finished");
         for (int i = 0; i < 1000; i++) {
+            engine.nextStep();
             System.out.println(i + " steps finished");
         }
         engine.close();
