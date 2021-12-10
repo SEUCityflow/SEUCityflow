@@ -18,6 +18,7 @@ public class VehicleInfo {
     public Route route;
 
     public VehicleInfo() {
+        route = new Route();
     }
 
     public VehicleInfo(VehicleInfo vehicleInfo) {
@@ -33,6 +34,110 @@ public class VehicleInfo {
         this.headwayTime = vehicleInfo.headwayTime;
         this.yieldDistance = vehicleInfo.yieldDistance;
         this.turnSpeed = vehicleInfo.turnSpeed;
-        this.route = vehicleInfo.route;
+        this.route = new Route(vehicleInfo.route);
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+
+    public double getLen() {
+        return len;
+    }
+
+    public void setLen(double len) {
+        this.len = len;
+    }
+
+    public double getWidth() {
+        return width;
+    }
+
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    public double getMaxPosAcc() {
+        return maxPosAcc;
+    }
+
+    public void setMaxPosAcc(double maxPosAcc) {
+        this.maxPosAcc = maxPosAcc;
+    }
+
+    public double getMaxNegAcc() {
+        return maxNegAcc;
+    }
+
+    public void setMaxNegAcc(double maxNegAcc) {
+        this.maxNegAcc = maxNegAcc;
+    }
+
+    public double getUsualPosAcc() {
+        return usualPosAcc;
+    }
+
+    public void setUsualPosAcc(double usualPosAcc) {
+        this.usualPosAcc = usualPosAcc;
+    }
+
+    public double getUsualNegAcc() {
+        return usualNegAcc;
+    }
+
+    public void setUsualNegAcc(double usualNegAcc) {
+        this.usualNegAcc = usualNegAcc;
+    }
+
+    public double getMinGap() {
+        return minGap;
+    }
+
+    public void setMinGap(double minGap) {
+        this.minGap = minGap;
+    }
+
+    public double getMaxSpeed() {
+        return maxSpeed;
+    }
+
+    public void setMaxSpeed(double maxSpeed) {
+        this.maxSpeed = maxSpeed;
+    }
+
+    public double getHeadwayTime() {
+        return headwayTime;
+    }
+
+    public void setHeadwayTime(double headwayTime) {
+        this.headwayTime = headwayTime;
+    }
+
+    public double getYieldDistance() {
+        return yieldDistance;
+    }
+
+    public void setYieldDistance(double yieldDistance) {
+        this.yieldDistance = yieldDistance;
+    }
+
+    public double getTurnSpeed() {
+        return turnSpeed;
+    }
+
+    public void setTurnSpeed(double turnSpeed) {
+        this.turnSpeed = turnSpeed;
+    }
+
+    public Route getRoute() {
+        return route;
+    }
+
+    public void setRoute(Route route) {
+        this.route = route;
     }
 }
