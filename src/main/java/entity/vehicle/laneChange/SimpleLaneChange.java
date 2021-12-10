@@ -1,7 +1,7 @@
 package entity.vehicle.laneChange;
 
 import entity.roadNet.roadNet.Lane;
-import entity.vehicle.Router.Router;
+import entity.vehicle.router.Router;
 import entity.vehicle.vehicle.Vehicle;
 
 public class SimpleLaneChange extends LaneChange {
@@ -20,7 +20,7 @@ public class SimpleLaneChange extends LaneChange {
             return;
         }
         signalSend = new Signal();
-        signalSend.source = vehicle;
+        signalSend.setSource(vehicle);
         if (vehicle.getCurDrivable().isLane()) {
             Lane curLane = vehicle.getCurLane();
             if (curLane.getLength() - vehicle.getCurDis() < 30) {
@@ -38,7 +38,7 @@ public class SimpleLaneChange extends LaneChange {
                 if (router.onLastRoad() || router.getNextDrivable(curLane.getOuterLane()) != null) { // 已到 route 末尾或者外侧路满足通行要求
                     outerEst = estimateGap(curLane.getOuterLane());                          // 与外侧前车间距
                     if (outerEst > curEst + vehicle.getLen()) {                           // 外侧车距要求大于当前车距 + 车厂 （不应该再加个 safeGapBefore ?）
-                        signalSend.target = curLane.getOuterLane();                         // signal 传向外侧
+                        signalSend.setTarget(curLane.getOuterLane());                         // signal 传向外侧
                     }
                 }
             }
@@ -47,7 +47,7 @@ public class SimpleLaneChange extends LaneChange {
                 if (router.onLastRoad() || router.getNextDrivable(curLane.getInnerLane()) != null) {
                     innerEst = estimateGap(curLane.getInnerLane());
                     if (innerEst > curEst + vehicle.getLen() && innerEst > outerEst) // 转向间距更大的一侧
-                        signalSend.target = curLane.getInnerLane();
+                        signalSend.setTarget(curLane.getInnerLane());
                 }
             }
             signalSend.setUrgency(1);
@@ -69,10 +69,10 @@ public class SimpleLaneChange extends LaneChange {
             waitingTime += interval;
         }
         if (signalRecv != null) {
-            if (vehicle == signalRecv.source.getTargetLeader()) { // 自己是某个将 laneChange 的车的前车
+            if (vehicle == signalRecv.getSource().getTargetLeader()) { // 自己是某个将 laneChange 的车的前车
                 return 100;                                         // 大速度用于后续 min2double
             } else {                                                // 作为后车
-                Vehicle source = signalRecv.source;
+                Vehicle source = signalRecv.getSource();
                 double srcSpeed = source.getSpeed();
                 double gap = source.getLaneChange().getGapBefore() - source.getLaneChange().getSafeGapBefore();
 
