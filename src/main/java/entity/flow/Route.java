@@ -12,6 +12,10 @@ public class Route {
         route = new ArrayList<>();
     }
 
+    public Route(Route other) { // 深拷贝
+        route = new ArrayList<>(other.route);
+    }
+
     public Route(List<Road> route) {
         this.route = route;
     }
