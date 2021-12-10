@@ -13,7 +13,7 @@ public class Road {
     private Intersection endIntersection;
     private List<Lane> lanes;
     private List<Point> points;
-    private List<Vehicle> planeRouteBuffer;
+    private List<Vehicle> planRouteBuffer;
 
     public void initLanePoints() {
         double dsum = 0;
@@ -58,7 +58,7 @@ public class Road {
     public Road() {
         lanes = new ArrayList<>();
         points = new ArrayList<>();
-        planeRouteBuffer = new LinkedList<>();
+        planRouteBuffer = new LinkedList<>();
     }
 
     public void buildSegmentationByInterval(double interval) { // TODO: segment 段数存在问题，当前为修改方案
@@ -114,11 +114,11 @@ public class Road {
     }
 
     public void addPlanRouteVehicle(Vehicle vehicle) {
-        planeRouteBuffer.add(vehicle);
+        planRouteBuffer.add(vehicle);
     }
 
     public void clearPlanRouteBuffer() {
-        planeRouteBuffer.clear();
+        planRouteBuffer.clear();
     }
 
     public String getId() {
@@ -141,8 +141,8 @@ public class Road {
         return points;
     }
 
-    public List<Vehicle> getPlaneRouteBuffer() {
-        return planeRouteBuffer;
+    public List<Vehicle> getPlanRouteBuffer() {
+        return planRouteBuffer;
     }
 
     public void setId(String id) {
@@ -165,7 +165,7 @@ public class Road {
         this.points = points;
     }
 
-    public void setPlaneRouteBuffer(List<Vehicle> planeRouteBuffer) {
-        this.planeRouteBuffer = planeRouteBuffer;
+    public void setplanRouteBuffer(List<Vehicle> planRouteBuffer) {
+        this.planRouteBuffer = planRouteBuffer;
     }
 }
