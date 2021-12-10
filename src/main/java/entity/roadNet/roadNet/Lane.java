@@ -1,19 +1,11 @@
 package entity.roadNet.roadNet;
 
+import entity.History.HistoryRecord;
 import entity.vehicle.vehicle.Vehicle;
 
 import java.util.*;
 
-class HistoryRecord {
-    public int vehicleNum;
-    public double averageSpeed;
-    public HistoryRecord(int vehicleNum, double averageSpeed) {
-        this.vehicleNum = vehicleNum;
-        this.averageSpeed = averageSpeed;
-    }
-}
-
-public class Lane extends  Drivable{
+public class Lane extends Drivable {
     private int laneIndex;
     private List<Segment> segments;
     private List<LaneLink> laneLinks;
@@ -51,11 +43,11 @@ public class Lane extends  Drivable{
         return belongRoad.getId() + "_" + getLaneIndex();
     }
 
-    public Road getBeLongRoad()  {
+    public Road getBeLongRoad() {
         return belongRoad;
     }
 
-    public boolean available(Vehicle vehicle)  {
+    public boolean available(Vehicle vehicle) {
         if (!vehicles.isEmpty()) {
             Vehicle tail = vehicles.get(vehicles.size() - 1);
             return tail.getCurDis() > tail.getLen() + vehicle.getMinGap();
@@ -64,7 +56,7 @@ public class Lane extends  Drivable{
         }
     }
 
-    public boolean canEnter(Vehicle vehicle)  {
+    public boolean canEnter(Vehicle vehicle) {
         if (!vehicles.isEmpty()) {
             Vehicle tail = vehicles.get(vehicles.size() - 1);
             return tail.getCurDis() > tail.getLen() + vehicle.getLen() || tail.getSpeed() >= 2;
@@ -73,11 +65,11 @@ public class Lane extends  Drivable{
         }
     }
 
-    public int getLaneIndex()  {
+    public int getLaneIndex() {
         return laneIndex;
     }
 
-    public Lane getInnerLane()  {
+    public Lane getInnerLane() {
         return laneIndex > 0 ? belongRoad.getLanes().get(laneIndex - 1) : null;
     }
 
@@ -100,7 +92,7 @@ public class Lane extends  Drivable{
 
     public List<LaneLink> getLaneLinksToRoad(Road road) {
         List<LaneLink> ret = new ArrayList<>();
-        for(LaneLink laneLink : laneLinks) {
+        for (LaneLink laneLink : laneLinks) {
             if (laneLink.getEndLane().getBeLongRoad() == road) {
                 ret.add(laneLink);
             }
@@ -113,15 +105,15 @@ public class Lane extends  Drivable{
         super.reset();
     }
 
-    public List<Vehicle> getWaitingBuffer()  {
+    public List<Vehicle> getWaitingBuffer() {
         return waitingBuffer;
     }
 
-    public void pushWaitingVehicle(Vehicle vehicle)  {
+    public void pushWaitingVehicle(Vehicle vehicle) {
         waitingBuffer.add(vehicle);
     }
 
-    public void buildSegmentation(int numSegments)  {
+    public void buildSegmentation(int numSegments) {
         for (int i = 0; i < numSegments; i++) {
             Segment segment = new Segment(i, this, i * length / numSegments, (i + 1) * length / numSegments);
             segments.add(i, segment);
@@ -149,19 +141,19 @@ public class Lane extends  Drivable{
         }
     }
 
-    public Segment getSegment(int index)  {
+    public Segment getSegment(int index) {
         return segments.get(index);
     }
 
-    public List<Segment> getSegments()  {
+    public List<Segment> getSegments() {
         return segments;
     }
 
-    public int getSegmentNum()  {
+    public int getSegmentNum() {
         return segments.size();
     }
 
-    public List<Vehicle> getVehiclesBeforeDistance(double dis, int segmentIndex, double deltaDis)  {
+    public List<Vehicle> getVehiclesBeforeDistance(double dis, int segmentIndex, double deltaDis) {
         List<Vehicle> ret = new ArrayList<>();
         for (int i = segmentIndex; i >= 0; i--) {
             Segment segment = getSegment(i);
@@ -191,7 +183,7 @@ public class Lane extends  Drivable{
         return null;
     }
 
-    public Vehicle getVehicleAfterDistance(double dis, int segmentIndex)  {
+    public Vehicle getVehicleAfterDistance(double dis, int segmentIndex) {
         for (int i = segmentIndex; i < getSegmentNum(); i++) {
             Segment segment = getSegment(i);
             List<Vehicle> list = segment.getVehicles();
@@ -206,11 +198,11 @@ public class Lane extends  Drivable{
         return null;
     }
 
-    public void updateHistory()  {
+    public void updateHistory() {
         double speedSum = historyVehicleNum * historyAverageSpeed;
         while (history.size() > historyLen) {
-            historyVehicleNum -= history.get(0).vehicleNum;
-            speedSum -= history.get(0).vehicleNum * history.get(0).averageSpeed;
+            historyVehicleNum -= history.get(0).getVehicleNum();
+            speedSum -= history.get(0).getVehicleNum() * history.get(0).getAverageSpeed();
             history.remove(0);
         }
         double curSpeedSum = 0;
