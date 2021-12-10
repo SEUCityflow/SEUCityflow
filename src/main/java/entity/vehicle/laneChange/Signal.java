@@ -4,14 +4,14 @@ import entity.roadNet.roadNet.Lane;
 import entity.vehicle.vehicle.Vehicle;
 
 public class Signal {
-    int urgency;
-    int direction;
-    Lane target;
-    Vehicle source;
+    private int urgency;
+    private int direction;
+    private Lane target;
+    private Vehicle source;
     //    int response;
 //    double extraSpace;
 
-    Signal() {
+    public Signal() {
     }
 
     Signal(Signal other) {
