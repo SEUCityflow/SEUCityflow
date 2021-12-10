@@ -165,7 +165,7 @@ public class Road {
         this.points = points;
     }
 
-    public void setplanRouteBuffer(List<Vehicle> planRouteBuffer) {
+    public void setPlanRouteBuffer(List<Vehicle> planRouteBuffer) {
         this.planRouteBuffer = planRouteBuffer;
     }
 }
