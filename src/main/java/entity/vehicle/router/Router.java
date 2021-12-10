@@ -1,4 +1,4 @@
-package entity.vehicle.Router;
+package entity.vehicle.router;
 
 import entity.flow.Route;
 import entity.roadNet.roadNet.Drivable;
@@ -129,12 +129,19 @@ public class Router {
         return success;
     }
 
+    public Router(Vehicle vehicle) {
+        this.vehicle = vehicle;
+        route = new ArrayList<>();
+        anchorPoints = new ArrayList<>();
+        planned = new ArrayList<>();
+    }
+
     public Router(Router other) {
-        this.vehicle = other.vehicle;
-        this.route = other.route;
-        this.anchorPoints = other.anchorPoints;
-        this.rnd = other.rnd;
-        this.iCurRoad = this.route.listIterator();
+        vehicle = other.vehicle;
+        route = new ArrayList<>(other.route);
+        anchorPoints = new ArrayList<>(other.anchorPoints);
+        rnd = other.rnd;
+        iCurRoad = this.route.listIterator();
         planned = new LinkedList<>();
         type = other.type;
     }
