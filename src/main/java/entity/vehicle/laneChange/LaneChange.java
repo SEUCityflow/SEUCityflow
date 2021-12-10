@@ -5,8 +5,6 @@ import entity.roadNet.roadNet.LaneLink;
 import entity.roadNet.roadNet.Segment;
 import entity.vehicle.vehicle.Vehicle;
 
-import java.util.ListIterator;
-
 public abstract class LaneChange {
 
     protected int lastDir;
@@ -82,7 +80,7 @@ public abstract class LaneChange {
     }
 
     public Lane getTarget() {
-        return signalSend != null ? signalSend.target : (Lane) vehicle.getCurDrivable();
+        return signalSend != null ? signalSend.getTarget() : (Lane) vehicle.getCurDrivable();
     }
 
     public Vehicle getTargetLeader() {
@@ -105,7 +103,7 @@ public abstract class LaneChange {
         changing = true;
         waitingTime = 0;
 
-        Lane targetLane = signalSend.target;
+        Lane targetLane = signalSend.getTarget();
         int segId = vehicle.getSegmentIndex();
         Segment targetSeg = targetLane.getSegment(segId);
 
@@ -125,12 +123,12 @@ public abstract class LaneChange {
 
     public void makeSignal(double interval) {
         if (signalSend != null) {
-            signalSend.direction = getDirection();
+            signalSend.setDirection(getDirection());
         }
     }
 
     public boolean planChange() {
-        return (signalSend != null && signalSend.target != null && signalSend.target != vehicle.getCurDrivable()) || changing;
+        return (signalSend != null && signalSend.getTarget() != null && signalSend.getTarget() != vehicle.getCurDrivable()) || changing;
     }
 
     public boolean canChange() {
@@ -148,7 +146,7 @@ public abstract class LaneChange {
         Vehicle partner = vehicle.getPartner();
         partner.setLastChangeTime(vehicle.getEngine().getCurrentTime());
         if (!partner.isReal()) {// partner id 修改
-            partner.setId(vehicle.getId() + "over");
+            partner.setId(vehicle.getId());
         }
         partner.setPartnerType(0); // 不再是 shadow
         partner.setOffSet(0);
@@ -167,14 +165,14 @@ public abstract class LaneChange {
     }
 
     public int getDirection() {
-        if (vehicle.getCurDrivable().isLaneLink() || signalSend == null || signalSend.target == null) {
+        if (vehicle.getCurDrivable().isLaneLink() || signalSend == null || signalSend.getTarget() == null) {
             return 0;
         }
         Lane curLane = (Lane) vehicle.getCurDrivable();
-        if (signalSend.target == curLane.getInnerLane()) {
+        if (signalSend.getTarget() == curLane.getInnerLane()) {
             return -1;
         }
-        if (signalSend.target == curLane.getOuterLane()) {
+        if (signalSend.getTarget() == curLane.getOuterLane()) {
             return 1;
         }
         return 0;
@@ -184,7 +182,7 @@ public abstract class LaneChange {
         targetLeader = null;
         targetFollower = null;
         if (signalSend != null) {
-            lastDir = signalSend.direction;
+            lastDir = signalSend.getDirection();
         } else {
             lastDir = 0;
         }
@@ -204,7 +202,7 @@ public abstract class LaneChange {
     public abstract double getSafeGapAfter();
 
     public int getSignalSendUrgency() {
-        return signalSend.urgency;
+        return signalSend.getUrgency();
     }
 
     public int getLastDir() {
