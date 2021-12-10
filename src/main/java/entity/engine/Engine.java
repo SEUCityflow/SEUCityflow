@@ -47,7 +47,7 @@ class ThreadControl implements Runnable {
     private void threadPlanRoute() {
         startBarrier.Wait();
         for (Road road : roads) {
-            for (Vehicle vehicle : road.getPlaneRouteBuffer()) {
+            for (Vehicle vehicle : road.getPlanRouteBuffer()) {
                 vehicle.updateRoute();
             }
         }
@@ -245,6 +245,7 @@ class ThreadControl implements Runnable {
 public class Engine {
     private Map<Integer, Pair<Vehicle, Integer>> vehiclePool;
     private Map<String, Vehicle> vehicleMap;
+    private Map<String, Flow> flowMap;
     private List<Set<Vehicle>> threadVehiclePool;
     private List<List<Road>> threadRoadPool;
     private List<List<Intersection>> threadIntersectionPool;
@@ -307,6 +308,7 @@ public class Engine {
             Flow flow = new Flow();
             flows.add(flow);
             flow.setId("flow_" + i);
+            flowMap.put(flow.getId(), flow);
             // vehicle
             JSONObject curVehicle = getJsonMemberObject(curFlowValue, "vehicle");
             VehicleInfo vehicleInfo = flow.getVehicleTemplate();
@@ -434,6 +436,7 @@ public class Engine {
             if (!vehicle.isReal() && vehicle.getChangedDrivable() != null) { // 当前为 shadow 在此阶段行驶 deltaDis 后发生 drivable 变化
                 vehicle.abortLaneChange();                                      // 放弃此次 laneChange 并清除 partner laneChange 状态
             }
+
             if (vehicle.isChanging()) {
                 int dir = vehicle.getLaneChangeDirection();                                                     // 0:直行，1:outerLane，-1:innerLane
                 double laneChangeSpeed = nextSpeed > eps ? Math.min(0.2 * nextSpeed, 1) : 0.2;
@@ -459,7 +462,7 @@ public class Engine {
         startBarrier.Wait();
         endBarrier.Wait();
         for (Road road : roadNet.getRoads()) {
-            for (Vehicle vehicle : road.getPlaneRouteBuffer())
+            for (Vehicle vehicle : road.getPlanRouteBuffer())
                 if (vehicle.isRouteValid()) { // vehicle.routeValid = true
                     vehicle.setFirstDrivable(); // vehicle controllerInfo.drivable 设置
                     vehicle.getCurLane().pushWaitingVehicle(vehicle);// problem
@@ -666,6 +669,7 @@ public class Engine {
     public Engine(String configFile, int threadNum) {
         vehiclePool = new HashMap<>();
         vehicleMap = new HashMap<>();
+        flowMap = new HashMap<>();
         threadVehiclePool = new LinkedList<>();
         threadRoadPool = new ArrayList<>();
         threadIntersectionPool = new ArrayList<>();
@@ -706,7 +710,9 @@ public class Engine {
 
     public void close() {
         try {
-            logOut.close();
+            if (saveReplay) {
+                logOut.close();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -746,14 +752,29 @@ public class Engine {
 
     //archive
     public void load(Archive archive) {
+        archive.resume(this);
     }
 
     public Archive snapshot() {
-        return null;
+        return new Archive(this);
     }
 
     public void loadFromFile(String fileName) {
+        Archive archive = Archive.load(this, fileName);
+        archive.resume(this);
+    }
 
+    public Archive loadArchiveFromFile(String fileName) {
+        return Archive.load(this, fileName);
+    }
+
+    public void saveArchiveToFile(Archive archive, String fileName) {
+        archive.dump(fileName);
+    }
+
+    public void saveToFile(String fileName) {
+        Archive archive = snapshot();
+        archive.dump(fileName);
     }
 
     // RL relate api
@@ -903,6 +924,26 @@ public class Engine {
     }
 
     // set / get
+    public Map<String, Flow> getFlowMap() {
+        return flowMap;
+    }
+
+    public void setFlowMap(Map<String, Flow> flowMap) {
+        this.flowMap = flowMap;
+    }
+
+    public ExecutorService getThreadExecutor() {
+        return threadExecutor;
+    }
+
+    public BufferedWriter getLogOut() {
+        return logOut;
+    }
+
+    public void setLogOut(BufferedWriter logOut) {
+        this.logOut = logOut;
+    }
+
     public Map<Integer, Pair<Vehicle, Integer>> getVehiclePool() {
         return vehiclePool;
     }
