@@ -266,26 +266,53 @@ public class RoadNet {
         }
     }
 
-
-    @Override
-    public String toString() {
-        return "RoadNet{" +
-                "roads=" + roads.size() +
-                ", intersections=" + intersections.size() +
-                ", roadMap=" + roadMap.size() +
-                ", interMap=" + interMap.size() +
-                ", drivableMap=" + drivableMap.size() +
-                ", lanes=" + lanes.size() +
-                ", laneLinks=" + laneLinks.size() +
-                ", drivables=" + drivables.size() +
-                '}';
-    }
-
     public List<Drivable> getDrivables() {
         return drivables;
     }
 
     public void setDrivables(List<Drivable> drivables) {
         this.drivables = drivables;
+    }
+
+    // set / get
+
+    public void setRoads(List<Road> roads) {
+        this.roads = roads;
+    }
+
+    public void setIntersections(List<Intersection> intersections) {
+        this.intersections = intersections;
+    }
+
+    public Map<String, Road> getRoadMap() {
+        return roadMap;
+    }
+
+    public void setRoadMap(Map<String, Road> roadMap) {
+        this.roadMap = roadMap;
+    }
+
+    public Map<String, Intersection> getInterMap() {
+        return interMap;
+    }
+
+    public void setInterMap(Map<String, Intersection> interMap) {
+        this.interMap = interMap;
+    }
+
+    public Map<String, Drivable> getDrivableMap() {
+        return drivableMap;
+    }
+
+    public void setDrivableMap(Map<String, Drivable> drivableMap) {
+        this.drivableMap = drivableMap;
+    }
+
+    public void setLanes(List<Lane> lanes) {
+        this.lanes = lanes;
+    }
+
+    public void setLaneLinks(List<LaneLink> laneLinks) {
+        this.laneLinks = laneLinks;
     }
 }
