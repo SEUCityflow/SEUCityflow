@@ -1011,11 +1011,12 @@ public class Vehicle {
     }
 
     // 对应 id 车辆信息获取 <title, info>
-    Map<String, String> getInfo() {
+    public Map<String, String> getInfo() {
         Map<String, String> info = new HashMap<>();
         info.put("running", Boolean.toString(isCurRunning()));
-        if (!isCurRunning())
+        if (!isCurRunning()) {
             return info;
+        }
         info.put("distance", Double.toString(getCurDis()));
         info.put("speed", Double.toString(getSpeed()));
         Drivable drivable = getCurDrivable();
