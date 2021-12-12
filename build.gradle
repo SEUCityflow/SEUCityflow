@@ -26,7 +26,7 @@ test {
 
 jar {
     baseName = 'SEUCityflow'
-    version =  '0.3.0'
+    version =  '0.4.0'
     String someString = ''
     configurations.runtimeClasspath.each {someString = someString + " lib//"+it.name}
     manifest {
@@ -40,7 +40,6 @@ task copyJar(type:Copy){
 }
 //把JAR复制到目标目录
 task release(type: Copy,dependsOn: [build,copyJar]) {
-// from 'conf'
-// into ('build/libs/eachend/conf') // 目标位置
+
 }
 
