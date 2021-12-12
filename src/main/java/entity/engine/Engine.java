@@ -278,7 +278,7 @@ public class Engine {
     private boolean laneChange;
     private int finishedVehicleCnt;
     private double cumulativeTravelTime;
-    private int manuallyPushCar;
+    private int manuallyPushCnt;
     private Random rnd;
 
     // load
@@ -778,7 +778,45 @@ public class Engine {
     }
 
     // RL relate api
-    public void pushVehicle(Map<String, Double> info, List<Road> roads) {
+    public void pushVehicle(Map<String, Double> info, List<String> roads) {
+        VehicleInfo vehicleInfo = new VehicleInfo();
+        if (info.get("speed") != null) {
+            vehicleInfo.setSpeed(info.get("speed"));
+        }
+        if (info.get("length") != null) {
+            vehicleInfo.setLen(info.get("length"));
+        }
+        if (info.get("width") != null) {
+            vehicleInfo.setWidth(info.get("width"));
+        }
+        if (info.get("maxPosAcc") != null) {
+            vehicleInfo.setMaxPosAcc(info.get("maxPosAcc"));
+        }
+        if (info.get("maxNegAcc") != null) {
+            vehicleInfo.setMaxNegAcc(info.get("maxNegAcc"));
+        }
+        if (info.get("usualPosAcc") != null) {
+            vehicleInfo.setUsualPosAcc(info.get("usualPosAcc"));
+        }
+        if (info.get("usualNegAcc") != null) {
+            vehicleInfo.setUsualNegAcc(info.get("usualNegAcc"));
+        }
+        if (info.get("minGap") != null) {
+            vehicleInfo.setMinGap(info.get("minGap"));
+        }
+        if (info.get("maxSpeed") != null) {
+            vehicleInfo.setMaxSpeed(info.get("maxSpeed"));
+        }
+        if (info.get("headwayTime") != null) {
+            vehicleInfo.setHeadwayTime(info.get("headwayTime"));
+        }
+        List<Road> routes = new ArrayList<>();
+        for (String roadId : roads) {
+            routes.add(roadNet.getRoadById(roadId));
+        }
+        Vehicle vehicle = new Vehicle(vehicleInfo, "manually_pushed_" + manuallyPushCnt, this, null);
+        pushVehicle(vehicle, false);
+        vehicle.getFirstRoad().addPlanRouteVehicle(vehicle);
     }
 
     public int getVehicleCount() {
@@ -786,7 +824,11 @@ public class Engine {
     }
 
     public List<String> getVehicles(boolean includeWaiting) {
-        return null;
+        List<String> ret = new ArrayList<>();
+        for (Vehicle vehicle : getRunningVehicle(includeWaiting)) {
+            ret.add(vehicle.getId());
+        }
+        return ret;
     }
 
     public Map<String, Integer> getLaneVehicleCount() {
@@ -814,7 +856,7 @@ public class Engine {
     public Map<String, List<String>> getLaneVehicles() {
         Map<String, List<String>> ret = new HashMap<>();
         for (Lane lane : roadNet.getLanes()) {
-            List<String> vehicles = new LinkedList<>();
+            List<String> vehicles = new ArrayList<>();
             for (Vehicle vehicle : lane.getVehicles()) {
                 vehicles.add(vehicle.getId());
             }
@@ -839,14 +881,19 @@ public class Engine {
         return ret;
     }
 
-    public Map<String, String> getVehicleInfo(String id) {
-        return null;
+    public Map<String, String> getVehicleInfo(String id) throws RuntimeException {
+        Vehicle vehicle = vehicleMap.get(id);
+        if (vehicle == null) {
+            throw new RuntimeException("Vehicle " + id + " not found");
+        } else {
+            return vehicle.getInfo();
+        }
     }
 
-    public String getLeader(String vehicleId) throws Exception {
+    public String getLeader(String vehicleId) throws RuntimeException {
         Vehicle vehicle = vehicleMap.get(vehicleId);
         if (vehicle == null) {
-            throw new Exception("Vehicle '" + vehicleId + "' not found");
+            throw new RuntimeException("Vehicle '" + vehicleId + "' not found");
         } else {
             if (laneChange) {
                 if (!vehicle.isReal()) {
@@ -885,10 +932,23 @@ public class Engine {
         roadNet.getIntersectionById(id).getTrafficLight().setPhase(phaseIndex);
     }
 
-    public void setReplayLogFile(String logFile) {
+    public void setReplayLogFile(String logFile) throws IOException {
+        if (!isSaveReplayInConfig) {
+            System.out.println("saveReplay is not set to true in config file!");
+            return;
+        }
+        if (logOut != null) {
+            logOut.close();
+        }
+        logOut = new BufferedWriter(new FileWriter(logFile));
     }
 
     public void setSaveReplay(boolean open) {
+        if (!isSaveReplayInConfig) {
+            System.out.println("saveReplay is not set to true in config file!");
+            return;
+        }
+        saveReplay = open;
     }
 
     public void setVehicleSpeed(String id, double speed) throws Exception { //设置某车速度
@@ -896,7 +956,7 @@ public class Engine {
         if (vehicle == null) {
             throw new Exception("Vehicle '" + id + "' not found");
         } else {
-            vehicle.setBufferCustomSpeed(speed); //problem
+            vehicle.setBufferCustomSpeed(speed);
         }
     }
 
@@ -904,8 +964,20 @@ public class Engine {
         this.seed = seed;
     }
 
-    public boolean changeRoute(String vehicleId, List<String> anchorId) {
-        return false;
+    public boolean setRoute(String vehicleId, List<String> anchorId) {
+        Vehicle vehicle = vehicleMap.get(vehicleId);
+        if (vehicle == null) {
+            return false;
+        }
+        List<Road> anchors = new ArrayList<>();
+        for (String roadId : anchorId) {
+            Road road = roadNet.getRoadById(roadId);
+            if (road == null) {
+                return false;
+            }
+            anchors.add(road);
+        }
+        return vehicle.changeRoute(anchors);
     }
 
     private List<Vehicle> getRunningVehicle() {
@@ -1172,12 +1244,12 @@ public class Engine {
         this.rnd = rnd;
     }
 
-    public int getManuallyPushCar() {
-        return manuallyPushCar;
+    public int getManuallyPushCnt() {
+        return manuallyPushCnt;
     }
 
-    public void setManuallyPushCar(int manuallyPushCar) {
-        this.manuallyPushCar = manuallyPushCar;
+    public void setManuallyPushCnt(int manuallyPushCnt) {
+        this.manuallyPushCnt = manuallyPushCnt;
     }
 
     public List<Vehicle> getLaneChangeNotifyBuffer() {
