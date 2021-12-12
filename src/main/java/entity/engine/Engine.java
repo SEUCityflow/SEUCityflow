@@ -439,7 +439,7 @@ public class Engine {
 
             if (vehicle.isChanging()) {
                 int dir = vehicle.getLaneChangeDirection();                                                     // 0:直行，1:outerLane，-1:innerLane
-                double laneChangeSpeed = nextSpeed > eps ? Math.min(0.2 * nextSpeed, 1) : 0.2;
+                double laneChangeSpeed = Math.max(0.2 * nextSpeed, 1);
                 double newOffSet = Math.abs(vehicle.getOffSet() + laneChangeSpeed * interval * dir); // 横向偏移量计算
                 newOffSet = Math.min(newOffSet, vehicle.getMaxOffSet());
                 vehicle.setOffSet(newOffSet * dir); // 更新偏移量
