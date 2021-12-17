@@ -377,7 +377,7 @@ public class Engine {
         return true;
     }
 
-    private void setLogFile(String jsonFile, String logFile) throws IOException {
+    public void setLogFile(String jsonFile, String logFile) throws IOException {
         writeJsonToFile(jsonFile, "{\"static\":" + roadNet.convertToJson() + "}");
         logOut = new BufferedWriter(new FileWriter(logFile));
     }
@@ -817,6 +817,10 @@ public class Engine {
         Vehicle vehicle = new Vehicle(vehicleInfo, "manually_pushed_" + manuallyPushCnt, this, null);
         pushVehicle(vehicle, false);
         vehicle.getFirstRoad().addPlanRouteVehicle(vehicle);
+    }
+
+    public void setRandomSeed(int seed) {
+        rnd.setSeed(seed);
     }
 
     public int getVehicleCount() {

@@ -394,6 +394,12 @@ class LaneChangeArchive {
 }
 
 public class VehicleArchive {
+    @JSONField(name = "priority", ordinal = 1)
+    private int priority;
+    @JSONField(name = "id", ordinal = 2)
+    private String id;
+    @JSONField(name = "enterTime", ordinal = 3)
+    private double enterTime;
     @JSONField(name = "vehicleInfoArchive", ordinal = 4)
     private VehicleInfoArchive vehicleInfoArchive;
     @JSONField(name = "controllerInfoArchive", ordinal = 5)
@@ -402,12 +408,6 @@ public class VehicleArchive {
     private LaneChangeInfoArchive laneChangeInfoArchive;
     @JSONField(name = "laneChangeArchive", ordinal = 7)
     private LaneChangeArchive laneChangeArchive;
-    @JSONField(name = "priority", ordinal = 1)
-    private int priority;
-    @JSONField(name = "id", ordinal = 2)
-    private String id;
-    @JSONField(name = "enterTime", ordinal = 3)
-    private double enterTime;
 
     public VehicleArchive() {
         vehicleInfoArchive = new VehicleInfoArchive();

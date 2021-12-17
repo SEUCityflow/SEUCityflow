@@ -1,6 +1,5 @@
 package entity.archive;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONReader;
 import com.alibaba.fastjson.JSONWriter;
 import com.alibaba.fastjson.annotation.JSONField;
