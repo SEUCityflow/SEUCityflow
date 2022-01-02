@@ -1,9 +1,10 @@
-package util;
+package entity.archive;
 import com.alibaba.fastjson.annotation.JSONField;
 import entity.roadNet.roadNet.Intersection;
 import entity.roadNet.roadNet.Lane;
 import entity.roadNet.roadNet.Road;
 import entity.roadNet.roadNet.RoadNet;
+import util.Point;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +14,7 @@ class node {
     private String id;
     @JSONField(ordinal = 2)
     private List<Double> point;
-    @JSONField(ordinal = 4)
+    @JSONField(ordinal = 3)
     private boolean virtual;
     @JSONField(ordinal = 4)
     private double width;
