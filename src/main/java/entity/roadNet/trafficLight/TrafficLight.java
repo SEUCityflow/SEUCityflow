@@ -8,7 +8,6 @@ import java.util.List;
 public class TrafficLight {
     private Intersection intersection;
     private List<LightPhase> phases;
-//    private List<Integer> roadLinkIndices;
     private double remainDuration;
     private int curPhaseIndex;
 
@@ -63,14 +62,6 @@ public class TrafficLight {
     public void setPhases(List<LightPhase> phases) {
         this.phases = phases;
     }
-
-//    public List<Integer> getRoadLinkIndices() {
-//        return roadLinkIndices;
-//    }
-//
-//    public void setRoadLinkIndices(List<Integer> roadLinkIndices) {
-//        this.roadLinkIndices = roadLinkIndices;
-//    }
 
     public double getRemainDuration() {
         return remainDuration;

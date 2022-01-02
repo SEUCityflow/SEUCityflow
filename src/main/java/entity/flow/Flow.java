@@ -5,17 +5,17 @@ import entity.vehicle.vehicle.Vehicle;
 import entity.vehicle.vehicle.VehicleInfo;
 
 public class Flow {
-    private VehicleInfo vehicleTemplate;
-    private Route route;
-    private double interval;
-    private double nowTime = 0;
-    private double currentTime = 0;
-    private int startTime = 0;
-    private int endTime = -1;
-    private int cnt = 0;
+    private VehicleInfo vehicleTemplate; // 基本车辆信息
+    private Route route; // anchor point
+    private double interval; // 进入 roadnet 间隔
+    private double nowTime = 0; // 当前累计时间
+    private double currentTime = 0; // 当前时间
+    private int startTime = 0; // 开始进入时间
+    private int endTime = -1; // 结束进入时间
+    private int cnt = 0; // 累计进入次数
     private Engine engine;
     private String id;
-    private boolean valid = true;
+    private boolean valid = true; // route 可达
 
     public Flow() {
         vehicleTemplate = new VehicleInfo();

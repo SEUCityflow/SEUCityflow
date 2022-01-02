@@ -5,14 +5,14 @@ import entity.vehicle.vehicle.Vehicle;
 import java.util.Arrays;
 
 public class Cross {
-    private LaneLink[] laneLinks;
-    private Vehicle[] notifyVehicles;
-    private double[] notifyDistances;
-    private double[] distanceOnLane;
+    private final LaneLink[] laneLinks;
+    private final Vehicle[] notifyVehicles;
+    private final double[] notifyDistances;
+    private final double[] distanceOnLane;
     private double leaveDistance;
-    private double arriveDistance;
+    //    private double arriveDistance;
     private double ang;
-    private double[] safeDistances;
+    private final double[] safeDistances;
 
     public Cross() {
         laneLinks = new LaneLink[2];
@@ -28,7 +28,7 @@ public class Cross {
         notifyDistances[i] = notifyDistance;
     }
 
-    // Todo: canPass
+    // TODO: 考虑体积碰撞
     public boolean canPass(Vehicle vehicle, LaneLink laneLink, double distanceToLaneLinkStart) {
         int i = (laneLink == laneLinks[0]) ? 0 : 1;
         Vehicle foeVehicle = notifyVehicles[1 - i];
@@ -37,24 +37,25 @@ public class Cross {
         double d1 = distanceOnLane[i] - distanceToLaneLinkStart;
         double d2 = distanceOnLane[1 - i];
 
+        // 无冲突车辆或当前车辆无法停下或冲突车辆已完全通过或冲突车辆死锁无法移动
         if (foeVehicle == null || !vehicle.canYield(d1) || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) {
             return true;
         }
         boolean canPass = false;
-        if (foeVehicle.canYield(d2)) {
+        if (foeVehicle.canYield(d2)) { // 冲突车辆可停
             int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
             int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
-            if (reachSteps < foeVehicleReachSteps) {
+            if (reachSteps < foeVehicleReachSteps) { // 自己早到
                 canPass = true;
-            } else if (reachSteps > foeVehicleReachSteps) {
-                canPass = t1.ordinal() > t2.ordinal();
-            } else {
-                if (t1.ordinal() > t2.ordinal()) {
+            } else if (reachSteps > foeVehicleReachSteps) { // 自己晚到
+                canPass = t1.ordinal() > t2.ordinal(); // 交通规则优势
+            } else { // 同时到
+                if (t1.ordinal() > t2.ordinal()) { // 交通规则优势
                     canPass = true;
-                } else if (t1.ordinal() == t2.ordinal()) {
-                    if (vehicle.getEnterLaneLinkTime() == foeVehicle.getBufferEnterLaneLinkTime()) {
-                        if (d1 == d2) {
-                            canPass = vehicle.getPriority() > foeVehicle.getPriority();
+                } else if (t1.ordinal() == t2.ordinal()) { // 同优势
+                    if (vehicle.getEnterLaneLinkTime() == foeVehicle.getBufferEnterLaneLinkTime()) { // 同时进路口
+                        if (d1 == d2) { // 同距离
+                            canPass = vehicle.getPriority() > foeVehicle.getPriority(); // 优先级
                         } else {
                             canPass = d1 < d2;
                         }
@@ -121,9 +122,9 @@ public class Cross {
         this.leaveDistance = leaveDistance;
     }
 
-    public void setArriveDistance(double arriveDistance) {
-        this.arriveDistance = arriveDistance;
-    }
+//    public void setArriveDistance(double arriveDistance) {
+//        this.arriveDistance = arriveDistance;
+//    }
 
     public void setAng(double ang) {
         this.ang = ang;

@@ -12,7 +12,7 @@ public class Road {
     private Intersection startIntersection;
     private Intersection endIntersection;
     private List<Lane> lanes;
-    private List<Point> points;
+    private List<Point> points; // 起点为 startIntersection 中心，终点为 endIntersection 中心
     private List<Vehicle> planRouteBuffer;
 
     public void initLanePoints() {
@@ -61,9 +61,10 @@ public class Road {
         planRouteBuffer = new LinkedList<>();
     }
 
-    public void buildSegmentationByInterval(double interval) { // TODO: segment 段数存在问题，当前为修改方案
+    public void buildSegmentationByInterval(double interval) {
+        int numSegments = (int) Math.max(Math.ceil(Point.getLengthOfPoints(lanes.get(0).getPoints()) / interval), 1);
         for (Lane lane : lanes) {
-            lane.buildSegmentation((int) Math.max(Math.ceil(Point.getLengthOfPoints(lane.getPoints()) / interval), 1));
+            lane.buildSegmentation(numSegments);
         }
     }
 

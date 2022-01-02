@@ -27,6 +27,7 @@ public class Intersection {
         laneLinks = new ArrayList<>();
     }
 
+    // 计算 laneLink 交点
     private Cross calCross(LaneLink laneLink1, LaneLink laneLink2) {
         List<Point> p1 = laneLink1.getPoints();
         List<Point> p2 = laneLink2.getPoints();
@@ -38,11 +39,11 @@ public class Intersection {
                 Point A2 = p1.get(i + 1);
                 Point B1 = p2.get(j);
                 Point B2 = p2.get(j + 1);
-                if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) {
+                if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) { // 平行
                     continue;
                 }
                 Point p = Point.calcIntersectionPoint(A1, A2, B1, B2);
-                if (Point.onSegment(A1, A2, p) && Point.onSegment(B1, B2, p)) {
+                if (Point.onSegment(A1, A2, p) && Point.onSegment(B1, B2, p)) { // 相交
                     Cross cross = new Cross();
                     cross.setLaneLinks(laneLink1, laneLink2);
                     cross.setDistanceOnLane(disa + p.minus(A1).len(), disb + p.minus(B1).len());
@@ -60,6 +61,7 @@ public class Intersection {
         return null;
     }
 
+    // 初始化 cross
     public void initCrosses() {
         List<LaneLink> allLaneLink = new ArrayList<>();
         for (RoadLink roadLink : roadLinks) {
@@ -85,7 +87,8 @@ public class Intersection {
         }
     }
 
-    public List<Point> getOutLine() { // 计算 intersection 凸包
+    // 计算 intersection 凸包
+    public List<Point> getOutLine() {
         List<Point> ret = new ArrayList<>();
         ret.add(point);
         for (Road road : roads) {
@@ -108,7 +111,6 @@ public class Intersection {
             }
         }
         return calConvexHull(ret);
-//        return ret;
     }
 
     public String getId() {

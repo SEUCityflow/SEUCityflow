@@ -47,18 +47,20 @@ public class Lane extends Drivable {
         return belongRoad;
     }
 
+    // 用于 waitingBuffer 进入 lane
     public boolean available(Vehicle vehicle) {
         if (!vehicles.isEmpty()) {
-            Vehicle tail = vehicles.get(vehicles.size() - 1);
+            Vehicle tail = getLastVehicle();
             return tail.getCurDis() > tail.getLen() + vehicle.getMinGap();
         } else {
             return true;
         }
     }
 
+    // 用于 laneLink 进入 lane
     public boolean canEnter(Vehicle vehicle) {
         if (!vehicles.isEmpty()) {
-            Vehicle tail = vehicles.get(vehicles.size() - 1);
+            Vehicle tail = getLastVehicle();
             return tail.getCurDis() > tail.getLen() + vehicle.getLen() || tail.getSpeed() >= 2;
         } else {
             return true;

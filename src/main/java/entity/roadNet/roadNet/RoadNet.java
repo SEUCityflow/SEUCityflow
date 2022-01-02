@@ -12,7 +12,7 @@ import java.util.*;
 
 import entity.vehicle.vehicle.VehicleInfo;
 import util.Point;
-import util.RoadNetSerialization;
+import entity.archive.RoadNetSerialization;
 
 
 public class RoadNet {
@@ -275,7 +275,6 @@ public class RoadNet {
     }
 
     // set / get
-
     public void setRoads(List<Road> roads) {
         this.roads = roads;
     }
