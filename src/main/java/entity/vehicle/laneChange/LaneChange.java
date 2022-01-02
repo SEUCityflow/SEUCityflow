@@ -7,7 +7,7 @@ import entity.vehicle.vehicle.Vehicle;
 
 public abstract class LaneChange {
 
-    protected int lastDir;
+    protected int lastDir; // 上次 laneChange 方向
     protected Signal signalRecv;
     protected Signal signalSend;
 
@@ -17,11 +17,11 @@ public abstract class LaneChange {
 
     protected double leaderGap;
     protected double followerGap;
-    protected double waitingTime;
+    protected double waitingTime; // 准备 laneChange 却受抑制的时间
     protected boolean changing;
-    protected boolean finished;
+    protected boolean finished; // laneChange 完成
     protected double lastChangeTime;
-    protected static final double coolingTime = 3;
+    protected static final double coolingTime = 3; // laneChange 冷却时间
 
     public LaneChange(Vehicle vehicle, LaneChange other) {
         lastDir = other.lastDir;
@@ -145,7 +145,7 @@ public abstract class LaneChange {
 
         Vehicle partner = vehicle.getPartner();
         partner.setLastChangeTime(vehicle.getEngine().getCurrentTime());
-        if (!partner.isReal()) {// partner id 修改
+        if (!partner.isReal()) { // partner id 修改
             partner.setId(vehicle.getId());
         }
         partner.setPartnerType(0); // 不再是 shadow
