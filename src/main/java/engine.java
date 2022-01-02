@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class engine {
+public class engine { // 供 python 调用
     private final Engine eng;
 
     public engine(String configFile, int threadNum) {

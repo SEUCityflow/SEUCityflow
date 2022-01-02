@@ -10,8 +10,8 @@ public class ControllerInfo {
     private double dis;
     private Drivable drivable;
     private Drivable prevDrivable;
-    private double approachingIntersectionDistance;
-    private double gap;
+    private double approachingIntersectionDistance; // 用于判断是否接近 intersection
+    private double gap; // 与前车间距
     private int enterLaneLinkTime;
     private Vehicle leader;
     private Vehicle blocker;

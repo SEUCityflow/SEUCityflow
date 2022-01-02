@@ -1,9 +1,9 @@
 package entity.vehicle.vehicle;
 
 public class LaneChangeInfo {
-    private int partnerType;
+    private int partnerType; // 0: 无 shadow, 1：有 shadow 且是原车, 2：为 shadow
     private Vehicle partner;
-    private double offSet;
+    private double offSet; // laneChange 时变道距离判断
     private int segmentIndex;
 
     LaneChangeInfo() {

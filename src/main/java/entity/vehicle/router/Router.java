@@ -64,7 +64,7 @@ public class Router {
         return lanes.get(selectLaneIndex(curLane, lanes));
     }
 
-    // 最短路, redo
+    // 最短路
     private boolean dijkstra(Road start, Road end, List<Road> buffer) {
         Map<Road, Double> dis = new HashMap<>();
         Map<Road, Road> from = new HashMap<>();
@@ -196,7 +196,6 @@ public class Router {
         return getNextDrivable(0);
     }
 
-    // redo
     // 由当前 drivable 计算下一个 drivable（当前为 lane 则给出 laneLink，反之同理）
     public Drivable getNextDrivable(Drivable curDrivable) {
         if (curDrivable.isLaneLink()) { // 当前是 laneLink 直接得出

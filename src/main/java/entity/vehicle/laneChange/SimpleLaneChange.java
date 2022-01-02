@@ -75,13 +75,10 @@ public class SimpleLaneChange extends LaneChange {
                 Vehicle source = signalRecv.getSource();
                 double srcSpeed = source.getSpeed();
                 double gap = source.getLaneChange().getGapBefore() - source.getLaneChange().getSafeGapBefore();
-
                 double v = vehicle.getNoCollisionSpeed(srcSpeed, source.getMaxNegAcc(), vehicle.getSpeed(), vehicle.getMaxNegAcc(), gap, interval, 0);
-
                 if (v < 0) {// 无法满足 yieldSpeed 要求就算了
                     v = 100;
                 }
-                // If the follower is too fast, let it go.
                 return v;
             }
         }

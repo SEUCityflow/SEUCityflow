@@ -12,7 +12,7 @@ class Buffer {
     boolean isEndSet;
     boolean isEnterLaneLinkTimeSet;
     boolean isBlockerSet;
-    boolean isCustomSpeedSet;
+    boolean isCustomSpeedSet; // 手动设置的速度
 
     double dis;
     double speed;

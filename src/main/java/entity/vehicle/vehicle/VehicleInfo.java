@@ -12,9 +12,9 @@ public class VehicleInfo {
     public double usualNegAcc = 2.5;
     public double minGap = 2;
     public double maxSpeed = 16.66667;
-    public double headwayTime = 1;
-    public double yieldDistance = 5;
-    public double turnSpeed = 8.3333;
+    public double headwayTime = 1; // 车头时距
+    public double yieldDistance = 5; // 在 cross 时如无法通过应有的让步距离
+    public double turnSpeed = 8.3333; // 转弯限速
     public Route route;
 
     public VehicleInfo() {

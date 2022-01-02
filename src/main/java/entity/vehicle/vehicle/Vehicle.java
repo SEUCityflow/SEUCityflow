@@ -17,12 +17,12 @@ import static util.Point.*;
 import java.util.*;
 
 public class Vehicle {
-    private VehicleInfo vehicleInfo;
-    private Buffer buffer;
-    private ControllerInfo controllerInfo;
-    private LaneChangeInfo laneChangeInfo;
-    private LaneChange laneChange;
-    private int priority;
+    private VehicleInfo vehicleInfo; // 车辆基本数据
+    private Buffer buffer; // 完成 step 后生成的新数据，待更新到 controllerInfo
+    private ControllerInfo controllerInfo; // 当前数据
+    private LaneChangeInfo laneChangeInfo; // 变道数据
+    private LaneChange laneChange; // 变道
+    private int priority; // 优先级
     private String id;
     private double enterTime;
     private Engine engine;
@@ -52,19 +52,6 @@ public class Vehicle {
         routeValid = vehicle.routeValid;
     }
 
-    public Vehicle(Vehicle vehicle, Flow flow) {
-        vehicleInfo = vehicle.vehicleInfo;
-        controllerInfo = new ControllerInfo(this, vehicle.controllerInfo);
-        buffer = vehicle.buffer;
-        priority = vehicle.priority;
-        id = vehicle.id;
-        engine = vehicle.engine;
-        this.flow = flow;
-        enterTime = vehicle.enterTime;
-        laneChangeInfo = vehicle.laneChangeInfo;
-        laneChange = new SimpleLaneChange(this, vehicle.laneChange);
-    }
-
     // shadow 创建，除 laneChange（新建）和 flow（nullptr）与 router.vehicle 外全部一致
     public Vehicle(Vehicle vehicle, String id, Engine engine, Flow flow) {
         vehicleInfo = vehicle.vehicleInfo;
@@ -79,6 +66,7 @@ public class Vehicle {
         laneChange = new SimpleLaneChange(this);
     }
 
+    // 用于 flow
     public Vehicle(VehicleInfo init, String id, Engine engine, Flow flow) {
         vehicleInfo = new VehicleInfo(init);
         controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd());
@@ -128,18 +116,18 @@ public class Vehicle {
         return buffer.drivable;
     }
 
-    // redo，获取 vehicle 当前坐标
+    // 获取 vehicle 当前坐标
     public Point getPoint() {
-        if (Math.abs(getOffSet()) < eps || controllerInfo.getDrivable().isLaneLink()) {
+        if (Math.abs(getOffSet()) < eps || controllerInfo.getDrivable().isLaneLink()) { // 未 laneChange 时位置
             return getPointByDistance(controllerInfo.getDrivable().getPoints(), controllerInfo.getDis());
         } else {
             Lane lane = (Lane) controllerInfo.getDrivable();
-            Point origin = getPointByDistance(lane.getPoints(), controllerInfo.getDis()); // 未 laneChange 时位置
+            Point origin = getPointByDistance(lane.getPoints(), controllerInfo.getDis());
             Point next;
             double percentage;
             List<Lane> lanes = lane.getBelongRoad().getLanes();
-            if (getOffSet() > 0) {                                                                             // 向外侧便宜
-                next = getPointByDistance(lanes.get(lane.getLaneIndex() + 1).getPoints(), controllerInfo.getDis());                            // 外侧同距离位置
+            if (getOffSet() > 0) {  // 向外侧偏移
+                next = getPointByDistance(lanes.get(lane.getLaneIndex() + 1).getPoints(), controllerInfo.getDis()); // 外侧同距离位置
                 percentage = 2 * getOffSet() / (lane.getWidth() + lanes.get(lane.getLaneIndex() + 1).getWidth()); // 横向所占比例
             } else {
                 next = getPointByDistance(lanes.get(lane.getLaneIndex() - 1).getPoints(), controllerInfo.getDis());
@@ -303,11 +291,11 @@ public class Vehicle {
         if (distance <= 0) {                                                            // 已到
             return 0;
         }
+        double interval = engine.getInterval();
         if (vehicleInfo.speed > targetSpeed) {// 当前速度大于目标速度
-            return (int) Math.ceil(distance / vehicleInfo.speed); // 时间？？ 少除了 interval？
+            return (int) Math.ceil(distance / vehicleInfo.speed / interval);
         }
         double distanceUntilTargetSpeed = getDistanceUntilSpeed(targetSpeed, acc); // 加速到 targetSpeed 距离
-        double interval = engine.getInterval();
         if (distanceUntilTargetSpeed > distance) {   // distance 内加速不到 targetSpeed
             return (int) Math.ceil((Math.sqrt(vehicleInfo.speed * vehicleInfo.speed + 2 * acc * distance) - vehicleInfo.speed) / acc / interval); // 在 distance 内加到最终速所用时间段
         } else {
@@ -362,7 +350,7 @@ public class Vehicle {
         ControlInfo controlInfo = new ControlInfo();
         Drivable drivable = controllerInfo.getDrivable();
         double v = vehicleInfo.maxSpeed;                                    // 上限速度
-        v = Math.min(v, vehicleInfo.speed + vehicleInfo.maxPosAcc * interval); // TODO: random??? 当前速度能加到的最快速度
+        v = Math.min(v, vehicleInfo.speed + vehicleInfo.maxPosAcc * interval); // 当前速度能加到的最快速度
         v = Math.min(v, drivable.getMaxSpeed()); // 道路限速
         // car follow
         v = Math.min(v, getCarFollowSpeed(interval)); // 跟随速度
@@ -383,14 +371,14 @@ public class Vehicle {
             laneLink = (LaneLink) nextDrivable;
             if (!laneLink.isAvailable() || !laneLink.getEndLane().canEnter(this)) { // not only the first vehicle should follow intersection logic  由于红灯或 endLane 车辆过多而不可通
                 if (getMinBrakeDistance() > controllerInfo.getDrivable().getLength() - controllerInfo.getDis()) { // 无法在线前刹车
-                    // TODO: what if it cannot brake before red light?
+                    // TODO: 暂时不会出现此情况
                 } else {
                     v = Math.min(v, getStopBeforeSpeed(controllerInfo.getDrivable().getLength() - controllerInfo.getDis(), interval)); // 能停下的话经过 interval 时间的速度
                     return v;
                 }
             }
-            if (laneLink.isTurn()) {                     // 绿灯转弯限速
-                v = Math.min(v, vehicleInfo.turnSpeed); // TODO: define turn speed
+            if (laneLink.isTurn()) { // 绿灯转弯限速
+                v = Math.min(v, vehicleInfo.turnSpeed);
             }
         }
         if (laneLink == null && controllerInfo.getDrivable().isLaneLink()) {// 已在 intersection
