@@ -7,10 +7,11 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class JsonRelate {
-    // public static boolean readJsonFromFile(String filename, rapidjson::Document document);
     public static boolean writeJsonToFile(String filename, String json) {
-        try (BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filename))) {
-            bufferedWriter.write(String.valueOf(json));
+        try {
+            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filename));
+            bufferedWriter.write(json);
+            bufferedWriter.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
