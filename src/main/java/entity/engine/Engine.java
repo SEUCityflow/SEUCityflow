@@ -308,6 +308,11 @@ public class Engine {
                 lane.getVehicles().addAll(segment.getVehicles());
             }
         }
+        for (Drivable drivable : roadNet.getDrivables()) {
+            if (drivable.getVehicles().size() != 0) {
+                drivable.getVehicles().getFirst().updateLeaderAndGap(null);
+            }
+        }
         laneChangeNotifyBuffer.clear();
     }
 
@@ -410,7 +415,7 @@ public class Engine {
         if (laneChange) {
             initSegments();
             planLaneChange();
-            updateLeaderAndGap();
+//            updateLeaderAndGap();
         }
         notifyCross();
         getAction();
@@ -502,12 +507,12 @@ public class Engine {
             e.printStackTrace();
         }
         finished = true;
-        for (int i = 0; i < (laneChange ? 9 : 6); i++) {
+        for (int i = 0; i < (laneChange ? 8 : 6); i++) {
             startBarrier.Wait();
             endBarrier.Wait();
         }
         threadExecutor.shutdown();
-        System.out.println("end");
+//        System.out.println("end");
     }
 
     public void reset(boolean resetRnd) {
