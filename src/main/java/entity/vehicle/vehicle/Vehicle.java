@@ -231,7 +231,7 @@ public class Vehicle {
                 }
                 // 当前 drivable 中无车，再向前找
                 dis += drivable.getLength();
-                // ？多次寻找后 dis 距离过大，停止寻找
+                // 多次寻找后 dis 距离过大，停止寻找
                 if (dis > vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2) {
                     return;
                 }
@@ -261,9 +261,9 @@ public class Vehicle {
 
         double v = getNoCollisionSpeed(leader.getSpeed(), leader.getMaxNegAcc(), vehicleInfo.speed, vehicleInfo.maxNegAcc, controllerInfo.getGap(), interval, 0); // 极端情况下制动无碰撞
 
-        if (hasSetCustomSpeed())
+        if (hasSetCustomSpeed()) {
             return Math.min(buffer.customSpeed, v); // 有习惯速度则以习惯速度
-
+        }
         double assumeDecel = 0, leaderSpeed = leader.getSpeed(); // 速度差
         if (vehicleInfo.speed > leaderSpeed) {
             assumeDecel = vehicleInfo.speed - leaderSpeed;
@@ -471,7 +471,7 @@ public class Vehicle {
     }
 
     public void updateLaneChangeNeighbor() { // 交由 laneChange 寻找 laneChange 后的 leader 与 follower
-        laneChange.updateLeaderAndFollower();
+        laneChange.updateTargetLeaderAndFollower();
     }
 
     public void insertShadow(Vehicle shadow) { // 交由 laneChange 将 shadow 插入 targetLane
