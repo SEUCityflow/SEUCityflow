@@ -197,7 +197,7 @@ class ThreadControl implements Runnable {
             if (engine.isLaneChange()) {
                 threadInitSegments();
                 threadPlanLaneChange();
-                threadUpdateLeaderAndGap();
+//                threadUpdateLeaderAndGap();
             }
             threadNotifyCross();
             threadGetAction();
