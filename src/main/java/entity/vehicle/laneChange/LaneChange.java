@@ -44,7 +44,7 @@ public abstract class LaneChange {
         this.vehicle = vehicle;
     }
 
-    public void updateLeaderAndFollower() {
+    public void updateTargetLeaderAndFollower() {
         targetLeader = targetFollower = null;
         Lane target = signalSend.getTarget();
         targetLeader = target.getVehicleAfterDistance(vehicle.getCurDis(), vehicle.getSegmentIndex()); // 换行后前面的车
@@ -68,9 +68,7 @@ public abstract class LaneChange {
         } else {
             leaderGap = targetLeader.getCurDis() - vehicle.getCurDis() - targetLeader.getLen();
         }
-
         targetFollower = target.getVehicleBeforeDistance(vehicle.getCurDis(), vehicle.getSegmentIndex());
-
         if (targetFollower != null) {
             followerGap = vehicle.getCurDis() - targetFollower.getCurDis() - vehicle.getLen();
         } else {
@@ -115,7 +113,9 @@ public abstract class LaneChange {
 
         targetSeg.insertVehicle(shadow); // 更新 targetLane 对应 segment
 
-        shadow.updateLeaderAndGap(targetLeader); // 更新 shadow 与前车距离
+        if (targetLeader != null) { // 更新 shadow 与前车距离
+            shadow.updateLeaderAndGap(targetLeader);
+        }
         if (targetFollower != null) {// 更新后车 与 shadow 距离
             targetFollower.updateLeaderAndGap(shadow);
         }
