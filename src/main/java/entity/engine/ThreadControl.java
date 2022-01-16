@@ -131,7 +131,6 @@ class ThreadControl implements Runnable {
                 }
             }
         }
-
         endBarrier.Wait();
     }
 
@@ -140,7 +139,7 @@ class ThreadControl implements Runnable {
         List<Pair<Vehicle, Double>> buffer = new LinkedList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning()) {
-                engine.vehicleControl(vehicle, buffer); //计算speed、dis等信息
+                engine.vehicleControl(vehicle, buffer); //计算 speed、dis等信息
             }
         }
         synchronized (engine) {

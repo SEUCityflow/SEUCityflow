@@ -512,7 +512,6 @@ public class Engine {
             endBarrier.Wait();
         }
         threadExecutor.shutdown();
-//        System.out.println("end");
     }
 
     public void reset(boolean resetRnd) {

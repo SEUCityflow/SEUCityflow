@@ -101,7 +101,6 @@ public class Vehicle {
             }
             setBufferDis(dis);
         }
-
     }
 
     // 如 drivable 改变则返回新的 drivable
