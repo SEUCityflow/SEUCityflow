@@ -1,8 +1,8 @@
+import com.alibaba.fastjson.JSON;
 import entity.archive.Archive;
 import entity.engine.Engine;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 public class engine { // 供 python 调用
@@ -20,32 +20,32 @@ public class engine { // 供 python 调用
         return eng.getVehicleCount();
     }
 
-    public List<String> get_vehicles() {
-        return eng.getVehicles(false);
+    public String get_vehicles() {
+        return JSON.toJSONString(eng.getVehicles(false));
     }
 
-    public List<String> get_vehicles(boolean includeWaiting) {
-        return eng.getVehicles(includeWaiting);
+    public String get_vehicles(boolean includeWaiting) {
+        return JSON.toJSONString(eng.getVehicles(includeWaiting));
     }
 
-    public Map<String, Integer> get_lane_waiting_vehicle_count() {
-        return eng.getLaneWaitingVehicleCount();
+    public String get_lane_waiting_vehicle_count() {
+        return JSON.toJSONString(eng.getLaneWaitingVehicleCount());
     }
 
-    public Map<String, List<String>> get_lane_vehicles() {
-        return eng.getLaneVehicles();
+    public String get_lane_vehicles() {
+        return JSON.toJSONString(eng.getLaneVehicles());
     }
 
-    public Map<String, Double> get_vehicle_speed() {
-        return eng.getVehicleSpeed();
+    public String get_vehicle_speed() {
+        return JSON.toJSONString(eng.getVehicleSpeed());
     }
 
-    public Map<String, String> get_vehicle_info(String id) {
-        return eng.getVehicleInfo(id);
+    public String get_vehicle_info(String id) {
+        return JSON.toJSONString(eng.getVehicleInfo(id));
     }
 
-    public Map<String, Double> get_vehicle_distance() {
-        return eng.getVehicleDistance();
+    public String get_vehicle_distance() {
+        return JSON.toJSONString(eng.getVehicleDistance());
     }
 
     public String get_leader(String vehicleId) {
@@ -80,8 +80,8 @@ public class engine { // 供 python 调用
         eng.setSaveReplay(open);
     }
 
-    public void push_vehicle(Map<String, Double> info, List<String> roads) {
-        eng.pushVehicle(info, roads);
+    public void push_vehicle(Map<String, Double> info, String roads) {
+        eng.pushVehicle(info, JSON.parseArray(roads, String.class));
     }
 
     public void reset() {
@@ -104,8 +104,8 @@ public class engine { // 供 python 调用
         eng.loadFromFile(fileName);
     }
 
-    public boolean set_vehicle_route(String vehicleId, List<String> anchorId) {
-        return eng.setRoute(vehicleId, anchorId);
+    public boolean set_vehicle_route(String vehicleId, String anchorId) {
+        return eng.setRoute(vehicleId, JSON.parseArray(anchorId, String.class));
     }
 
     public void close() {
