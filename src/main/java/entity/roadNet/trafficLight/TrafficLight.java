@@ -10,9 +10,15 @@ public class TrafficLight {
     private List<LightPhase> phases;
     private double remainDuration;
     private int curPhaseIndex;
+    private List<Double> time;
+    private double period;
 
     public TrafficLight() {
         phases = new ArrayList<>();
+        time = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            time.add((double) 0);
+        }
     }
 
     public void init(int initPhaseIndex) {
@@ -47,6 +53,10 @@ public class TrafficLight {
         }
     }
 
+    public double getExpectedWaitingTime(int p) {
+        return (period - time.get(p)) * (period - time.get(p)) / period / 2;
+    }
+
     public void setPhase(int phaseIndex) {
         curPhaseIndex = phaseIndex;
     }
@@ -77,5 +87,21 @@ public class TrafficLight {
 
     public void setCurPhaseIndex(int curPhaseIndex) {
         this.curPhaseIndex = curPhaseIndex;
+    }
+
+    public List<Double> getTime() {
+        return time;
+    }
+
+    public void setTime(List<Double> time) {
+        this.time = time;
+    }
+
+    public double getPeriod() {
+        return period;
+    }
+
+    public void setPeriod(double period) {
+        this.period = period;
     }
 }
