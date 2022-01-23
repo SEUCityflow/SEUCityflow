@@ -1,6 +1,7 @@
 package entity.archive;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -163,9 +164,18 @@ class ControllerInfoArchive {
     private boolean end;
     @JSONField(name = "running", ordinal = 10)
     private boolean running;
+    @JSONField(name = "routeIds", ordinal = 11)
+    private List<Pair<String, Integer>> routeIds;
+    @JSONField(name = "anchorPointsIds", ordinal = 12)
+    private List<String> anchorPointsIds;
+    @JSONField(name = "nowAnchorPoint", ordinal = 13)
+    private Pair<String, Integer> nowAnchorPoint;
+    @JSONField(name = "type", ordinal = 14)
+    private String type;
 
     public ControllerInfoArchive() {
-
+        routeIds = new ArrayList<>();
+        anchorPointsIds = new ArrayList<>();
     }
 
     public double getDis() {
@@ -246,6 +256,38 @@ class ControllerInfoArchive {
 
     public void setRunning(boolean running) {
         this.running = running;
+    }
+
+    public List<Pair<String, Integer>> getRouteIds() {
+        return routeIds;
+    }
+
+    public void setRouteIds(List<Pair<String, Integer>> routeIds) {
+        this.routeIds = routeIds;
+    }
+
+    public List<String> getAnchorPointsIds() {
+        return anchorPointsIds;
+    }
+
+    public void setAnchorPointsIds(List<String> anchorPointsIds) {
+        this.anchorPointsIds = anchorPointsIds;
+    }
+
+    public Pair<String, Integer> getNowAnchorPoint() {
+        return nowAnchorPoint;
+    }
+
+    public void setNowAnchorPoint(Pair<String, Integer> nowAnchorPoint) {
+        this.nowAnchorPoint = nowAnchorPoint;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }
 

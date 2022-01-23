@@ -12,11 +12,13 @@ import entity.roadNet.roadNet.Road;
 import entity.roadNet.trafficLight.TrafficLight;
 import entity.vehicle.laneChange.LaneChange;
 import entity.vehicle.laneChange.Signal;
+import entity.vehicle.router.Router;
+import entity.vehicle.router.RouterType;
 import entity.vehicle.vehicle.ControllerInfo;
 import entity.vehicle.vehicle.LaneChangeInfo;
 import entity.vehicle.vehicle.Vehicle;
 import entity.vehicle.vehicle.VehicleInfo;
-import javafx.util.Pair;
+import util.Pair;
 
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -24,10 +26,6 @@ import java.io.IOException;
 import java.util.*;
 
 public class Archive {
-    @JSONField(serialize = false, deserialize = false)
-    private final Map<Integer, Pair<Vehicle, Integer>> vehiclePool;
-    @JSONField(serialize = false, deserialize = false)
-    private final Map<String, Vehicle> vehicleMap;
     @JSONField(name = "trafficLightArchives", ordinal = 1)
     private List<TrafficLightArchive> trafficLightArchives;
     @JSONField(name = "flowArchives", ordinal = 2)
@@ -46,6 +44,28 @@ public class Archive {
     private int finishedVehicleCnt;
     @JSONField(name = "cumulativeTravelTime", ordinal = 9)
     private double cumulativeTravelTime;
+    @JSONField(name = "routeType", ordinal = 10)
+    private String routeType;
+
+    @JSONField(serialize = false, deserialize = false)
+    private final Map<Integer, Pair<Vehicle, Integer>> vehiclePool;
+    @JSONField(serialize = false, deserialize = false)
+    private final Map<String, Vehicle> vehicleMap;
+    @JSONField(serialize = false, deserialize = false)
+    private static final Map<String, RouterType> typeNameMap = new HashMap<>();
+    @JSONField(serialize = false, deserialize = false)
+    private static final Map<RouterType, String> typeMap = new HashMap<>();
+
+    static {
+        typeNameMap.put("LENGTH", RouterType.LENGTH);
+        typeNameMap.put("DURATION", RouterType.DURATION);
+        typeNameMap.put("DYNAMIC", RouterType.DYNAMIC);
+        typeNameMap.put("RANDOM", RouterType.RANDOM);
+        typeMap.put(RouterType.LENGTH, "LENGTH");
+        typeMap.put(RouterType.DURATION, "DURATION");
+        typeMap.put(RouterType.DYNAMIC, "DYNAMIC");
+        typeMap.put(RouterType.RANDOM, "RANDOM");
+    }
 
     // engine -> archive
     private static Map<Integer, Pair<Vehicle, Integer>> copyVehiclePool(Map<Integer, Pair<Vehicle, Integer>> pool) {
@@ -90,6 +110,7 @@ public class Archive {
         vehicleInfo.setHeadwayTime(vehicleInfoArchive.getHeadwayTime());
         vehicleInfo.setYieldDistance(vehicleInfoArchive.getYieldDistance());
         vehicleInfo.setTurnSpeed(vehicleInfoArchive.getTurnSpeed());
+        // route
         for (String string : vehicleInfoArchive.getRouteIds()) {
             vehicleInfo.getRoute().getRoute().add(engine.getRoadNet().getRoadById(string));
         }
@@ -106,6 +127,27 @@ public class Archive {
         controllerInfo.setPrevDrivable(engine.getRoadNet().getDrivableById(controllerInfoArchive.getPrevDrivableId()));
         controllerInfo.setLeader(vehicleMap.get(controllerInfoArchive.getLeaderId()));
         controllerInfo.setBlocker(vehicleMap.get(controllerInfoArchive.getBlockerId()));
+        // router
+        Router router = controllerInfo.getRouter();
+        router.setRnd(engine.getRnd());
+        List<Pair<String, Integer>> routeIdsArchive = controllerInfoArchive.getRouteIds();
+        List<String> anchorPointsIdsArchive = controllerInfoArchive.getAnchorPointsIds();
+        Pair<String, Integer> anchorPointArchive = controllerInfoArchive.getNowAnchorPoint();
+        List<Pair<Road, Integer>> route = new ArrayList<>();
+        List<Road> anchorPoints = new ArrayList<>();
+        // route
+        for (Pair<String, Integer> road : routeIdsArchive) {
+            route.add(new Pair<>(engine.getRoadNet().getRoadById(road.getKey()), road.getValue()));
+        }
+        router.setRoute(route);
+        // anchorPoints
+        for (String road : anchorPointsIdsArchive) {
+            anchorPoints.add(engine.getRoadNet().getRoadById(road));
+        }
+        router.setAnchorPoints(anchorPoints);
+        router.setNowAnchorPoint(new Pair<>(engine.getRoadNet().getRoadById(anchorPointArchive.getKey()), anchorPointArchive.getValue()));
+        router.setiCurRoad(route.listIterator());
+        router.setType(typeNameMap.get(controllerInfoArchive.getType()));
     }
 
     private void loadLaneChangeInfo(LaneChangeInfoArchive laneChangeInfoArchive, LaneChangeInfo laneChangeInfo) {
@@ -118,7 +160,6 @@ public class Archive {
     private void loadLaneChange(LaneChangeArchive laneChangeArchive, LaneChange laneChange, Engine engine) {
         laneChange.setTargetLeader(vehicleMap.get(laneChangeArchive.getLaneChangeLeaderId()));
         laneChange.setTargetFollower(vehicleMap.get(laneChangeArchive.getLaneChangeFollowerId()));
-        laneChange.setWaitingTime(laneChangeArchive.getLaneChangeWaitingTime());
         laneChange.setChanging(laneChangeArchive.isLaneChanging());
         laneChange.setLastChangeTime(laneChangeArchive.getLaneChangeLastTime());
         if (laneChangeArchive.getLaneChangeUrgency() != -Integer.MAX_VALUE) {
@@ -143,7 +184,7 @@ public class Archive {
         for (VehicleArchive archive : vehicleArchives) {
             Vehicle vehicle = vehiclePool.get(archive.getPriority()).getKey();
             loadVehicleInfo(archive.getVehicleInfoArchive(), vehicle.getVehicleInfo(), engine);
-            vehicle.setControllerInfo(new ControllerInfo(vehicle, vehicle.getVehicleInfo().getRoute(), rnd));
+            vehicle.setControllerInfo(vehicle.getControllerInfo());
             loadControllerInfo(archive.getControllerInfoArchive(), vehicle.getControllerInfo(), engine);
             loadLaneChangeInfo(archive.getLaneChangeInfoArchive(), vehicle.getLaneChangeInfo());
             loadLaneChange(archive.getLaneChangeArchive(), vehicle.getLaneChange(), engine);
@@ -213,6 +254,11 @@ public class Archive {
         vehicleInfoArchive.setHeadwayTime(vehicleInfo.getHeadwayTime());
         vehicleInfoArchive.setYieldDistance(vehicleInfo.getYieldDistance());
         vehicleInfoArchive.setTurnSpeed(vehicleInfo.getTurnSpeed());
+        // route
+        List<String> routeIds = vehicleInfoArchive.getRouteIds();
+        for (Road road : vehicleInfo.getRoute().getRoute()) {
+            routeIds.add(road.getId());
+        }
     }
 
     private void archiveControllerInfo(ControllerInfo controllerInfo, ControllerInfoArchive controllerInfoArchive) {
@@ -226,6 +272,18 @@ public class Archive {
         controllerInfoArchive.setBlockerId(controllerInfo.getBlocker() != null ? controllerInfo.getBlocker().getId() : null);
         controllerInfoArchive.setEnd(controllerInfo.isEnd());
         controllerInfoArchive.setRunning(controllerInfo.isRunning());
+        // router
+        List<Pair<String, Integer>> routeIds = controllerInfoArchive.getRouteIds();
+        for (Pair<Road, Integer> road : controllerInfo.getRouter().getRoute()) {
+            routeIds.add(new Pair<>(road.getKey().getId(), road.getValue()));
+        }
+        List<String> anchorPointsIds = controllerInfoArchive.getAnchorPointsIds();
+        for (Road road : controllerInfo.getRouter().getAnchorPoints()) {
+            anchorPointsIds.add(road.getId());
+        }
+        Pair<Road, Integer> anchorPoint = controllerInfo.getRouter().getNowAnchorPoint();
+        controllerInfoArchive.setNowAnchorPoint(new Pair<>(anchorPoint.getKey().getId(), anchorPoint.getValue()));
+        controllerInfoArchive.setType(typeMap.get(controllerInfo.getRouter().getType()));
     }
 
     private void archiveLaneChangeInfo(LaneChangeInfo laneChangeInfo, LaneChangeInfoArchive laneChangeInfoArchive) {
@@ -259,15 +317,10 @@ public class Archive {
         VehicleInfoArchive vehicleInfoArchive = vehicleArchive.getVehicleInfoArchive();
         VehicleInfo vehicleInfo = vehicle.getVehicleInfo();
         archiveVehicleInfo(vehicleInfo, vehicleInfoArchive);
-        //controllerInfo
+        // controllerInfo
         ControllerInfoArchive controllerInfoArchive = vehicleArchive.getControllerInfoArchive();
         ControllerInfo controllerInfo = vehicle.getControllerInfo();
         archiveControllerInfo(controllerInfo, controllerInfoArchive);
-        // route
-        List<String> routeIds = vehicleInfoArchive.getRouteIds();
-        for (Road road : controllerInfo.getRouter().getRoute()) {
-            routeIds.add(road.getId());
-        }
         // laneChangeInfo
         LaneChangeInfoArchive laneChangeInfoArchive = vehicleArchive.getLaneChangeInfoArchive();
         LaneChangeInfo laneChangeInfo = vehicle.getLaneChangeInfo();
@@ -287,6 +340,7 @@ public class Archive {
         vehicleArchives = new ArrayList<>();
     }
 
+    // engine -> archive
     public Archive(Engine engine) {
         trafficLightArchives = new ArrayList<>();
         flowArchives = new ArrayList<>();
@@ -299,6 +353,7 @@ public class Archive {
         rnd = new Random(engine.getSeed());
         finishedVehicleCnt = engine.getFinishedVehicleCnt();
         cumulativeTravelTime = engine.getCumulativeTravelTime();
+        routeType = typeMap.get(engine.getRouterType());
 
         vehiclePool = copyVehiclePool(engine.getVehiclePool());
         for (Map.Entry<Integer, Pair<Vehicle, Integer>> entry : vehiclePool.entrySet()) {
@@ -335,6 +390,7 @@ public class Archive {
         engine.setRnd(rnd);
         engine.setFinishedVehicleCnt(finishedVehicleCnt);
         engine.setCumulativeTravelTime(cumulativeTravelTime);
+        engine.setRouterType(typeNameMap.get(routeType));
         // vehicle
         for (Set<Vehicle> vehicleSet : engine.getThreadVehiclePool()) {
             vehicleSet.clear();
@@ -382,7 +438,6 @@ public class Archive {
 
     // archive -> file
     public void dump(String fileName) {
-//        writeJsonToFile(fileName, JSON.toJSONString(this));
         try {
             JSONWriter writer = new JSONWriter(new FileWriter(fileName));
             writer.startObject();
@@ -414,6 +469,7 @@ public class Archive {
                 writer.writeValue(vehicleArchive);
             }
             writer.endArray();
+            // write engine
             writer.writeKey("step");
             writer.writeValue(step);
             writer.writeKey("activeVehicleCount");
@@ -424,6 +480,8 @@ public class Archive {
             writer.writeValue(finishedVehicleCnt);
             writer.writeKey("cumulativeTravelTime");
             writer.writeValue(cumulativeTravelTime);
+            writer.writeKey("routeType");
+            writer.writeValue(routeType);
             writer.endObject();
             writer.close();
         } catch (IOException e) {
@@ -465,6 +523,7 @@ public class Archive {
                 archive.getVehicleArchives().add(reader.readObject(VehicleArchive.class));
             }
             reader.endArray();
+            // read engine
             reader.readString();
             archive.setStep(reader.readInteger());
             reader.readString();
@@ -475,6 +534,8 @@ public class Archive {
             archive.setFinishedVehicleCnt(reader.readInteger());
             reader.readString();
             archive.setCumulativeTravelTime(reader.readInteger());
+            reader.readString();
+            archive.setRouteType(reader.readString());
             reader.endObject();
             reader.close();
         } catch (IOException e) {
@@ -555,5 +616,13 @@ public class Archive {
 
     public void setCumulativeTravelTime(double cumulativeTravelTime) {
         this.cumulativeTravelTime = cumulativeTravelTime;
+    }
+
+    public String getRouteType() {
+        return routeType;
+    }
+
+    public void setRouteType(String routeType) {
+        this.routeType = routeType;
     }
 }
