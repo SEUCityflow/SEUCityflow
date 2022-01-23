@@ -3,6 +3,7 @@ package entity.vehicle.vehicle;
 import entity.flow.Route;
 import entity.roadNet.roadNet.Drivable;
 import entity.vehicle.router.Router;
+import entity.vehicle.router.RouterType;
 
 import java.util.Random;
 
@@ -12,13 +13,14 @@ public class ControllerInfo {
     private Drivable prevDrivable;
     private double approachingIntersectionDistance; // 用于判断是否接近 intersection
     private double gap; // 与前车间距
-    private int enterLaneLinkTime;
+    private int enterLaneLinkTime = Integer.MAX_VALUE;
     private Vehicle leader;
     private Vehicle blocker;
     private boolean end;
     private boolean running;
     private Router router;
 
+    // archive
     public ControllerInfo(Vehicle vehicle) {
         router = new Router(vehicle);
     }
@@ -37,13 +39,13 @@ public class ControllerInfo {
         this.router = new Router(other.router);
     }
 
-    public ControllerInfo(Vehicle vehicle, Route route, Random rnd) {
-        router = new Router(vehicle, route, rnd);
-        enterLaneLinkTime = Integer.MAX_VALUE;
+    // flow
+    public ControllerInfo(Vehicle vehicle, Route route, Random rnd, RouterType routerType) {
+        router = new Router(vehicle, route, rnd, routerType);
     }
 
-    // redo
-    ControllerInfo(Vehicle vehicle, ControllerInfo other) {
+    // archive
+    public ControllerInfo(Vehicle vehicle, ControllerInfo other) {
         this.dis = other.dis;
         this.drivable = other.drivable;
         this.prevDrivable = other.prevDrivable;
@@ -58,6 +60,7 @@ public class ControllerInfo {
         router.setVehicle(vehicle);
     }
 
+    // set / get
     public double getDis() {
         return dis;
     }
