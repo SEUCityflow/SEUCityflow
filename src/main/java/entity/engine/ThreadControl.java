@@ -1,8 +1,10 @@
 package entity.engine;
 
 import entity.roadNet.roadNet.*;
+import entity.vehicle.router.Router;
+import entity.vehicle.router.RouterType;
 import entity.vehicle.vehicle.Vehicle;
-import javafx.util.Pair;
+import util.Pair;
 import util.Barrier;
 
 import java.util.*;
@@ -15,6 +17,7 @@ class ThreadControl implements Runnable {
     private final List<Road> roads;
     private final List<Intersection> intersections;
     private final List<Drivable> drivables;
+    private final List<Vehicle> vehiclesEnterLane;
 
     public ThreadControl(Engine engine, Barrier startBarrier, Barrier endBarrier, Set<Vehicle> vehicles, List<Road> roads, List<Intersection> intersections, List<Drivable> drivables) {
         this.engine = engine;
@@ -24,6 +27,7 @@ class ThreadControl implements Runnable {
         this.roads = roads;
         this.drivables = drivables;
         this.intersections = intersections;
+        vehiclesEnterLane = new ArrayList<>();
     }
 
     private void threadPlanRoute() {
@@ -139,7 +143,7 @@ class ThreadControl implements Runnable {
         List<Pair<Vehicle, Double>> buffer = new LinkedList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning()) {
-                engine.vehicleControl(vehicle, buffer); //计算 speed、dis等信息
+                engine.vehicleControl(vehicle, buffer, vehiclesEnterLane); //计算 speed、dis等信息
             }
         }
         synchronized (engine) {
@@ -163,7 +167,7 @@ class ThreadControl implements Runnable {
                         if (!vehicle.getLaneChange().isFinished()) {
                             engine.getVehicleMap().remove(vehicle.getId());
                             engine.setFinishedVehicleCnt(engine.getFinishedVehicleCnt() + 1);
-                            engine.setCumulativeTravelTime(engine.getCurrentTime() - vehicle.getEnterTime());
+                            engine.addCumulativeTravelTime(engine.getCurrentTime() - vehicle.getEnterTime());
                         }
                         Pair<Vehicle, Integer> pair = engine.getVehiclePool().get(vehicle.getPriority());
                         engine.getThreadVehiclePool().get(pair.getValue()).remove(vehicle);
@@ -190,6 +194,40 @@ class ThreadControl implements Runnable {
         endBarrier.Wait();
     }
 
+    private void threadUpdateShorterRoute() {
+        startBarrier.Wait();
+        for (Vehicle vehicle : vehiclesEnterLane) {
+            if (vehicle.getCurRouter().getType() != RouterType.DYNAMIC) {
+                continue;
+            }
+            Router router = vehicle.getCurRouter();
+            List<Pair<Road, Integer>> route = router.getRoute();
+            List<Road> anchorPoints = router.getAnchorPoints();
+            while (((Lane) vehicle.getCurDrivable()).getBelongRoad() != route.get(0).getKey()) {
+                route.remove(0);
+            }
+            if (!router.routeTooShort()) {
+                Pair<Road, Integer> routeToBeCheck = route.get(2);
+                Road roadToBeCheck = routeToBeCheck.getKey();
+                int pos = routeToBeCheck.getValue();
+                if (!roadToBeCheck.isAnchorPoint(anchorPoints.get(pos)) && roadToBeCheck.tooSlow(6)) {// TODO: 堵车速度设置
+                    Pair<Road, Integer> start = route.get(1);
+                    route.subList(2, route.size()).clear();
+                    router.dijkstra(start.getKey(), anchorPoints.get(pos), route, pos);
+                    router.setNowAnchorPoint(new Pair<>(anchorPoints.get(pos), pos));
+                }
+            }
+            while (router.routeTooShort() && !router.isEnd()) {
+                Pair<Road, Integer> start = router.getNowAnchorPoint();
+                router.dijkstra(start.getKey(), router.getAnchorPoints().get(start.getValue() + 1), route, start.getValue() + 1);
+                router.setNowAnchorPoint(new Pair<>(router.getAnchorPoints().get(start.getValue() + 1), start.getValue() + 1));
+            }
+            router.setiCurRoad(route.listIterator());
+        }
+        vehiclesEnterLane.clear();
+        endBarrier.Wait();
+    }
+
     public void run() {
         while (!engine.getFinished()) {
             threadPlanRoute();
@@ -203,6 +241,7 @@ class ThreadControl implements Runnable {
             threadUpdateLocation();
             threadUpdateAction();
             threadUpdateLeaderAndGap();
+            threadUpdateShorterRoute();
         }
     }
 
