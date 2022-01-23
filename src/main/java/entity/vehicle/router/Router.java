@@ -1,30 +1,54 @@
 package entity.vehicle.router;
 
 import entity.flow.Route;
-import entity.roadNet.roadNet.Drivable;
-import entity.roadNet.roadNet.Lane;
-import entity.roadNet.roadNet.LaneLink;
-import entity.roadNet.roadNet.Road;
+import entity.roadNet.roadNet.*;
+import entity.roadNet.trafficLight.TrafficLight;
 import entity.vehicle.vehicle.Vehicle;
-import javafx.util.Pair;
+import util.Pair;
 
 import java.util.*;
 
-enum RouterType {
-    LENGTH,
-    DURATION,
-    DYNAMIC
-}
-
-
 public class Router {
     private Vehicle vehicle;  // route 对应的车辆
-    private List<Road> route;  // 由 anchorPoints 生成的路径
+    private List<Pair<Road, Integer>> route;  // 由 anchorPoints 生成的路径
     private List<Road> anchorPoints;  // Flow 提供的必须经过的 Road
-    private ListIterator<Road> iCurRoad;   // 当前所在的 road 的位置
+    private ListIterator<Pair<Road, Integer>> iCurRoad;   // 当前所在的 road 的位置
     private Random rnd;  // 随机数
     private List<Drivable> planned;  // 未来要走的路径缓存，由 getNextDrivable() 提前计算得出
     private RouterType type = RouterType.LENGTH;
+    private Pair<Road, Integer> nowAnchorPoint = new Pair<>(null, null);
+
+    // archive
+    public Router(Vehicle vehicle) {
+        this.vehicle = vehicle;
+        route = new ArrayList<>();
+        anchorPoints = new ArrayList<>();
+        planned = new ArrayList<>();
+    }
+
+    // shadow
+    public Router(Router other) {
+        vehicle = other.vehicle;
+        route = new ArrayList<>(other.route);
+        anchorPoints = new ArrayList<>(other.anchorPoints);
+        rnd = other.rnd;
+        iCurRoad = this.route.listIterator();
+        planned = new LinkedList<>();
+        type = other.type;
+        nowAnchorPoint = new Pair<>(other.nowAnchorPoint.getKey(), other.nowAnchorPoint.getValue());
+    }
+
+    // flow
+    public Router(Vehicle vehicle, Route route, Random rnd, RouterType routerType) {
+        this.vehicle = vehicle;
+        this.route = new ArrayList<>();
+        this.anchorPoints = route.getRoute();
+        this.rnd = rnd;
+        this.type = routerType;
+        assert (this.anchorPoints.size() > 0);
+        this.iCurRoad = this.route.listIterator();
+        planned = new LinkedList<>();
+    }
 
     private int selectLaneIndex(Lane curLane, List<Lane> lanes) {
         assert (lanes.size() > 0);
@@ -65,7 +89,10 @@ public class Router {
     }
 
     // 最短路
-    private boolean dijkstra(Road start, Road end, List<Road> buffer) {
+    public boolean dijkstra(Road start, Road end, List<Pair<Road, Integer>> buffer, int num) {
+        if (start == end) {
+            return true;
+        }
         Map<Road, Double> dis = new HashMap<>();
         Map<Road, Road> from = new HashMap<>();
         Set<Road> visited = new HashSet<>();
@@ -86,9 +113,10 @@ public class Router {
             }
             visited.add(curRoad);
             double curDis = top.getValue();
-            dis.put(curRoad, curDis);
-            for (Road adjRoad : curRoad.getEndIntersection().getRoads()) {
-                if (!curRoad.connectedToRoad(adjRoad)) {
+            Intersection intersection = curRoad.getEndIntersection();
+            for (Road adjRoad : intersection.getRoads()) {
+                RoadLink roadLink = (curRoad.connectedToRoad(adjRoad));
+                if (roadLink == null) {
                     continue;
                 }
                 Double nowDis = dis.get(adjRoad);
@@ -98,12 +126,25 @@ public class Router {
                         newDis = curDis + adjRoad.getAverageLength();
                         break;
                     }
+                    case DYNAMIC:
                     case DURATION: {
                         double avgDur = adjRoad.getAverageDuration();
                         if (avgDur < 0) {
                             avgDur = adjRoad.getAverageLength() / vehicle.getMaxSpeed();
                         }
                         newDis = curDis + avgDur;
+                        TrafficLight trafficLight = intersection.getTrafficLight();
+                        switch (roadLink.getType()) {
+                            case turn_left:
+                                newDis += trafficLight.getExpectedWaitingTime(0);
+                                break;
+                            case turn_right:
+                                newDis += trafficLight.getExpectedWaitingTime(1);
+                                break;
+                            case go_straight:
+                                newDis += trafficLight.getExpectedWaitingTime(2);
+                                break;
+                        }
                         break;
                     }
                     default: {
@@ -113,47 +154,21 @@ public class Router {
                 }
                 if (nowDis == null || newDis < nowDis) {
                     from.put(adjRoad, curRoad);
+                    dis.put(adjRoad, newDis);
                     queue.add(new Pair<>(adjRoad, newDis));
                 }
             }
         }
-        List<Road> path = new ArrayList<>();
-        path.add(end);
+        List<Pair<Road, Integer>> path = new ArrayList<>();
+        path.add(new Pair<>(end, num));
         Road p = from.get(end);
         while (p != start) {
-            path.add(p);
+            path.add(new Pair<>(p, num));
             p = from.get(p);
         }
         Collections.reverse(path);
         buffer.addAll(path);
         return success;
-    }
-
-    public Router(Vehicle vehicle) {
-        this.vehicle = vehicle;
-        route = new ArrayList<>();
-        anchorPoints = new ArrayList<>();
-        planned = new ArrayList<>();
-    }
-
-    public Router(Router other) {
-        vehicle = other.vehicle;
-        route = new ArrayList<>(other.route);
-        anchorPoints = new ArrayList<>(other.anchorPoints);
-        rnd = other.rnd;
-        iCurRoad = this.route.listIterator();
-        planned = new LinkedList<>();
-        type = other.type;
-    }
-
-    public Router(Vehicle vehicle, Route route, Random rnd) {
-        this.vehicle = vehicle;
-        this.route = route.getRoute();
-        this.anchorPoints = route.getRoute();
-        this.rnd = rnd;
-        assert (this.anchorPoints.size() > 0);
-        this.iCurRoad = this.route.listIterator();
-        planned = new LinkedList<>();
     }
 
     public Road getFirstRoad() {
@@ -162,14 +177,14 @@ public class Router {
 
     // 进入 route[0] 应选的 drivable
     public Drivable getFirstDrivable() {
-        List<Lane> lanes = route.get(0).getLanes();
+        List<Lane> lanes = route.get(0).getKey().getLanes();
         if (route.size() == 1) {  // 仅 1 road
             return selectLane(null, lanes);  // 随机选 lane
         } else {
             List<Lane> candidateLanes = new ArrayList<>();
             for (Lane lane : lanes) {
                 // 选择拥有由 route[0] 驶向 route[1] 的 laneLink 的 lane
-                if (lane.getLaneLinksToRoad(route.get(1)).size() > 0) {
+                if (lane.getLaneLinksToRoad(route.get(1).getKey()).size() > 0) {
                     candidateLanes.add(lane);
                 }
             }
@@ -202,22 +217,22 @@ public class Router {
             return ((LaneLink) curDrivable).getEndLane();
         } else { // 当前是 lane
             Lane curLane = ((Lane) curDrivable);
-            ListIterator<Road> tmpCurRoadIter = route.listIterator(iCurRoad.nextIndex());
-            Road tmpCurRoad = tmpCurRoadIter.next();
+            ListIterator<Pair<Road, Integer>> tmpCurRoadIter = route.listIterator(iCurRoad.nextIndex());
+            Road tmpCurRoad = tmpCurRoadIter.next().getKey();
             // 找到 curDrivable 对应的 CurRoad
             while (tmpCurRoad != curLane.getBeLongRoad() && tmpCurRoadIter.hasNext()) {
-                tmpCurRoad = tmpCurRoadIter.next();
+                tmpCurRoad = tmpCurRoadIter.next().getKey();
             }
             assert (tmpCurRoadIter.hasNext() && (curLane.getBeLongRoad().equals(tmpCurRoad)));
             if (tmpCurRoadIter.nextIndex() == route.size()) { // 已到 route 末尾
                 return null;
             } else if (tmpCurRoadIter.nextIndex() == route.size() - 1) {  // route 内倒数第二 road
-                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next());
+                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next().getKey());
                 return selectLaneLink(curLane, laneLinks);  // 走向可选 laneLink 的 endLane 中距离 curlane 最近的 lane
             } else {   // 选取的 laneLink 需能确保到达 route 的再下一个 road
                 // 由 route[i] 到 route[i+1] 的 laneLink
-                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next());
-                Road nextTwoRoad = tmpCurRoadIter.next();
+                List<LaneLink> laneLinks = curLane.getLaneLinksToRoad(tmpCurRoadIter.next().getKey());
+                Road nextTwoRoad = tmpCurRoadIter.next().getKey();
                 List<LaneLink> candidateLaneLinks = new ArrayList<>();
                 for (LaneLink laneLink : laneLinks) {
                     Lane nextLane = laneLink.getEndLane();
@@ -235,7 +250,9 @@ public class Router {
     public void update() {
         Drivable curDrivable = vehicle.getCurDrivable();
         if (curDrivable.isLane()) {
-            while (iCurRoad.hasNext() && ((Lane) curDrivable).getBeLongRoad() != iCurRoad.next()) ;
+            while (iCurRoad.hasNext() && ((Lane) curDrivable).getBeLongRoad() != iCurRoad.next().getKey()) {
+
+            }
             iCurRoad.previous();
             assert (iCurRoad.hasNext());
         }
@@ -253,7 +270,7 @@ public class Router {
         if (drivable.isLaneLink()) {
             return false;
         }
-        return ((Lane) drivable).getBeLongRoad() == route.get(route.size() - 1);
+        return ((Lane) drivable).getBeLongRoad() == route.get(route.size() - 1).getKey();
     }
 
     public boolean onLastRoad() {
@@ -265,9 +282,9 @@ public class Router {
         if (isLastRoad(curLane)) {
             return null;
         }
-        ListIterator<Road> nextRoad = route.listIterator(iCurRoad.nextIndex());
+        ListIterator<Pair<Road, Integer>> nextRoad = route.listIterator(iCurRoad.nextIndex());
         nextRoad.next();
-        Road tmpCurRoad = nextRoad.next();
+        Road tmpCurRoad = nextRoad.next().getKey();
 
         int min_diff = curLane.getBeLongRoad().getLanes().size();
         Lane chosen = null;
@@ -283,23 +300,19 @@ public class Router {
 
     // 更新 route 为经过 anchorpoint 各路的最短路
     public boolean updateShortestPath() {
-        // Dijkstra
-        planned.clear();
         route = new ArrayList<>();
-        route.add(anchorPoints.get(0));
-        for (int i = 1; i < anchorPoints.size(); i++) {
-            if (anchorPoints.get(i - 1) == anchorPoints.get(i)) {
-                continue;
-            }
-            if (!dijkstra(anchorPoints.get(i - 1), anchorPoints.get(i), route)) {
+        route.add(new Pair<>(anchorPoints.get(0), 0));
+        nowAnchorPoint = new Pair<>(anchorPoints.get(0), 0);
+        while ((type != RouterType.DYNAMIC || routeTooShort()) && !isEnd()) {
+            Pair<Road, Integer> start = getNowAnchorPoint();
+            if (!dijkstra(start.getKey(), getAnchorPoints().get(start.getValue() + 1), route, start.getValue() + 1)) {
                 return false;
             }
-        }
-        if (route.size() <= 1) {
-            return false;
+            setNowAnchorPoint(new Pair<>(getAnchorPoints().get(start.getValue() + 1), start.getValue() + 1));
         }
         iCurRoad = this.route.listIterator();
-        return true;
+        planned.clear();
+        return route.size() > 1;
     }
 
     public boolean changeRoute(List<Road> anchor) {
@@ -307,15 +320,15 @@ public class Router {
             return false;
         }
         int pos = iCurRoad.nextIndex();
-        Road curRoad = iCurRoad.next();
+        Pair<Road, Integer> curRoad = iCurRoad.next();
         List<Road> backUp = new ArrayList<>(anchorPoints);
-        List<Road> backUpRoute = new ArrayList<>(route);
+        List<Pair<Road, Integer>> backUpRoute = new ArrayList<>(route);
         anchorPoints.clear();
-        anchorPoints.add(curRoad);
+        anchorPoints.add(curRoad.getKey());
         anchorPoints.addAll(anchor);
         boolean result = updateShortestPath();
         if (result && onValidLane()) {
-            iCurRoad = anchorPoints.listIterator();
+            iCurRoad = route.listIterator();
             return true;
         } else {
             anchorPoints = backUp;
@@ -324,6 +337,21 @@ public class Router {
             iCurRoad = route.listIterator(pos);
             return false;
         }
+    }
+
+    public boolean routeTooShort() {
+        if (route.size() < 3) {
+            return true;
+        }
+        double sum = 0;
+        for (Pair<Road, Integer> road : route) {
+            sum += road.getKey().getAverageLength();
+        }
+        return sum < vehicle.getMaxSpeed() * 3;
+    }
+
+    public boolean isEnd() {
+        return nowAnchorPoint.getValue() == anchorPoints.size() - 1;
     }
 
     // set / get
@@ -335,10 +363,9 @@ public class Router {
         this.vehicle = vehicle;
     }
 
-    public List<Road> getRoute() {
+    public List<Pair<Road, Integer>> getRoute() {
         return route;
     }
-
 
     public boolean onValidLane() {
         return !(getNextDrivable() == null && !onLastRoad());
@@ -350,14 +377,6 @@ public class Router {
 
     public void setAnchorPoints(List<Road> anchorPoints) {
         this.anchorPoints = anchorPoints;
-    }
-
-    public ListIterator<Road> getiCurRoad() {
-        return iCurRoad;
-    }
-
-    public void setiCurRoad(ListIterator<Road> iCurRoad) {
-        this.iCurRoad = iCurRoad;
     }
 
     public Random getRnd() {
@@ -384,12 +403,32 @@ public class Router {
         this.type = type;
     }
 
+    public Pair<Road, Integer> getNowAnchorPoint() {
+        return nowAnchorPoint;
+    }
+
+    public void setNowAnchorPoint(Pair<Road, Integer> nowAnchorPoint) {
+        this.nowAnchorPoint = nowAnchorPoint;
+    }
+
+    public ListIterator<Pair<Road, Integer>> getiCurRoad() {
+        return iCurRoad;
+    }
+
+    public void setiCurRoad(ListIterator<Pair<Road, Integer>> iCurRoad) {
+        this.iCurRoad = iCurRoad;
+    }
+
+    public void setRoute(List<Pair<Road, Integer>> route) {
+        this.route = route;
+    }
+
     // 获取未来将走的所有 Road
     public List<Road> getFollowingRoads() {
         List<Road> ret = new ArrayList<>();
-        ListIterator<Road> newIter = route.listIterator(iCurRoad.nextIndex());
+        ListIterator<Pair<Road, Integer>> newIter = route.listIterator(iCurRoad.nextIndex());
         while (newIter.hasNext()) {
-            ret.add(newIter.next());
+            ret.add(newIter.next().getKey());
         }
         return ret;
     }
