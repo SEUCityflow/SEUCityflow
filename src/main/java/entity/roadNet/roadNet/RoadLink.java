@@ -3,12 +3,6 @@ package entity.roadNet.roadNet;
 import java.util.ArrayList;
 import java.util.List;
 
-enum RoadLinkType {
-    turn_right,
-    turn_left,
-    go_straight
-}
-
 public class RoadLink {
     private Intersection intersection;
     private Road startRoad;
@@ -18,7 +12,7 @@ public class RoadLink {
     private int index;
 
     public RoadLink() {
-        laneLinks = new ArrayList<LaneLink>();
+        laneLinks = new ArrayList<>();
     }
 
     public List<LaneLink> getLaneLinks() {
