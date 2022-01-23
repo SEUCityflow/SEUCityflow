@@ -8,8 +8,8 @@ import entity.vehicle.router.Router;
 import entity.vehicle.laneChange.LaneChange;
 import entity.vehicle.laneChange.Signal;
 import entity.vehicle.laneChange.SimpleLaneChange;
-import javafx.util.Pair;
-import util.ControlInfo;
+import entity.vehicle.router.RouterType;
+import util.Pair;
 import util.Point;
 
 import static util.Point.*;
@@ -29,6 +29,7 @@ public class Vehicle {
     private boolean routeValid = true;
     private Flow flow;
 
+    // 用于 archive file->archive
     public Vehicle() {
         vehicleInfo = new VehicleInfo();
         controllerInfo = new ControllerInfo(this);
@@ -37,7 +38,7 @@ public class Vehicle {
         laneChange = new SimpleLaneChange(this);
     }
 
-    // 用于 archive
+    // 用于 archive new VehiclePool
     public Vehicle(Vehicle vehicle) {
         vehicleInfo = new VehicleInfo(vehicle.vehicleInfo);
         controllerInfo = new ControllerInfo(this, vehicle.controllerInfo);
@@ -69,7 +70,23 @@ public class Vehicle {
     // 用于 flow
     public Vehicle(VehicleInfo init, String id, Engine engine, Flow flow) {
         vehicleInfo = new VehicleInfo(init);
-        controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd());
+        if (engine.getRouterType() != RouterType.RANDOM) {
+            controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd(), engine.getRouterType());
+        } else {
+            Random rnd = engine.getRnd();
+            switch (rnd.nextInt(3)) {
+                case 0:
+                    controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd(), RouterType.LENGTH);
+                    break;
+                case 1:
+                    controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd(), RouterType.DURATION);
+                    break;
+                case 2:
+                    controllerInfo = new ControllerInfo(this, vehicleInfo.route, engine.getRnd(), RouterType.DYNAMIC);
+                    break;
+            }
+        }
+
         buffer = new Buffer();
         this.id = id;
         this.engine = engine;
@@ -345,8 +362,7 @@ public class Vehicle {
     }
 
     // 求解 interval 后的速度
-    public ControlInfo getNextSpeed(double interval) {
-        ControlInfo controlInfo = new ControlInfo();
+    public double getNextSpeed(double interval) {
         Drivable drivable = controllerInfo.getDrivable();
         double v = vehicleInfo.maxSpeed;                                    // 上限速度
         v = Math.min(v, vehicleInfo.speed + vehicleInfo.maxPosAcc * interval); // 当前速度能加到的最快速度
@@ -357,8 +373,7 @@ public class Vehicle {
             v = Math.min(v, getIntersectionRelatedSpeed(interval)); // 过 intersection 速度
         }
         v = Math.max(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval); // 能减到的最小速度
-        controlInfo.speed = v;
-        return controlInfo;
+        return v;
     }
 
     // 将进入或已在 intersection 时的速度计算
