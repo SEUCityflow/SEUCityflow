@@ -7,9 +7,11 @@ import entity.flow.Flow;
 import entity.flow.Route;
 import entity.roadNet.roadNet.*;
 import entity.vehicle.laneChange.LaneChange;
+import entity.vehicle.router.RouterType;
 import entity.vehicle.vehicle.Vehicle;
 import entity.vehicle.vehicle.VehicleInfo;
-import javafx.util.Pair;
+import util.JsonMemberMiss;
+import util.Pair;
 import util.Barrier;
 import util.Point;
 
@@ -63,9 +65,19 @@ public class Engine {
     private double cumulativeTravelTime;
     private int manuallyPushCnt;
     private Random rnd;
+    private RouterType routerType = RouterType.LENGTH;
+
+    private static final Map<String, RouterType> typeNameMap = new HashMap<>();
+
+    static {
+        typeNameMap.put("LENGTH", RouterType.LENGTH);
+        typeNameMap.put("DURATION", RouterType.DURATION);
+        typeNameMap.put("DYNAMIC", RouterType.DYNAMIC);
+        typeNameMap.put("RANDOM", RouterType.RANDOM);
+    }
 
     // load
-    private boolean loadRoadNet(String jsonFile) throws Exception {
+    private boolean loadRoadNet(String jsonFile) {
         roadNet.loadFromJson(jsonFile);
         int cnt = 0;
         for (Road road : roadNet.getRoads()) {
@@ -83,7 +95,7 @@ public class Engine {
         return true;
     }
 
-    private boolean loadFlow(String jsonFileName) throws Exception {
+    private boolean loadFlow(String jsonFileName) {
         String json = readJsonData(jsonFileName);
         JSONArray flowValues = JSONObject.parseArray(json);
         for (int i = 0; i < flowValues.size(); i++) {
@@ -135,6 +147,15 @@ public class Engine {
             seed = getIntFromJsonObject(configValues, "seed");
             rnd.setSeed(seed);
             dir = getStringFromJsonObject(configValues, "dir");
+            try {
+                String jsonRouteType = getStringFromJsonObject(configValues, "routeType");
+                System.out.println(jsonRouteType);
+                routerType = typeNameMap.get(jsonRouteType);
+            } catch (JsonMemberMiss jsonMemberMiss) {
+                jsonMemberMiss.printStackTrace();
+            } finally {
+                routerType = RouterType.LENGTH;
+            }
             String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
             String flowFile = getStringFromJsonObject(configValues, "flowFile");
             if (!loadRoadNet(dir + roadNetFile)) {
@@ -186,17 +207,17 @@ public class Engine {
     }
 
     // nextStep
-    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer) {
+    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer, List<Vehicle> buffer2) {
         double nextSpeed;
         if (vehicle.hasSetSpeed()) {//已作为 partner 被设定过速度
             nextSpeed = vehicle.getBufferSpeed();
         } else {
-            nextSpeed = vehicle.getNextSpeed(interval).speed;//在多条件下计算速度
+            nextSpeed = vehicle.getNextSpeed(interval);//在多条件下计算速度
         }
         if (laneChange) {
             Vehicle partner = vehicle.getPartner();
             if (partner != null && !partner.hasSetSpeed()) { // 有 partner 且尚未进行 vehicleControl，在此同步速度
-                double partnerSpeed = partner.getNextSpeed(interval).speed;
+                double partnerSpeed = partner.getNextSpeed(interval);
                 nextSpeed = Math.min(nextSpeed, partnerSpeed);
                 partner.setBufferSpeed(nextSpeed);
                 if (partner.hasSetEnd()) {
@@ -238,6 +259,9 @@ public class Engine {
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {// 发生 drivable 变动且此时尚未到达 end
             Pair<Vehicle, Double> pair = new Pair<>(vehicle, vehicle.getBufferDis());
             buffer.add(pair);
+            if (vehicle.getBufferDrivable().isLane()) {
+                buffer2.add(vehicle);
+            }
         }
     }
 
@@ -357,6 +381,11 @@ public class Engine {
         endBarrier.Wait();
     }
 
+    private void updateShorterRoute() {
+        startBarrier.Wait();
+        endBarrier.Wait();
+    }
+
     private void updateLog() throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         for (Vehicle vehicle : getRunningVehicle()) {
@@ -422,6 +451,7 @@ public class Engine {
         updateLocation();
         updateAction();
         updateLeaderAndGap();
+        updateShorterRoute();
         if (!rlTrafficLight) {
             for (Intersection intersection : roadNet.getIntersections()) {
                 if (intersection.isVirtual()) {
@@ -507,7 +537,11 @@ public class Engine {
             e.printStackTrace();
         }
         finished = true;
-        for (int i = 0; i < (laneChange ? 8 : 6); i++) {
+        int cnt = 7;
+        if (isLaneChange()) {
+            cnt += 2;
+        }
+        for (int i = 0; i < cnt; i++) {
             startBarrier.Wait();
             endBarrier.Wait();
         }
@@ -597,7 +631,7 @@ public class Engine {
         if (info.get("headwayTime") != null) {
             vehicleInfo.setHeadwayTime(info.get("headwayTime"));
         }
-        List<Road> routes = new ArrayList<>();
+        List<Road> routes = vehicleInfo.getRoute().getRoute();
         for (String roadId : roads) {
             routes.add(roadNet.getRoadById(roadId));
         }
@@ -707,11 +741,11 @@ public class Engine {
     public double getAverageTravelTime() {
         double tt = cumulativeTravelTime;
         int n = finishedVehicleCnt;
-        for (int key : vehiclePool.keySet()) {
-            Vehicle vehicle = vehiclePool.get(key).getKey();
-            tt += getCurrentTime() - vehicle.getEnterTime();
-            n++;
-        }
+//        for (int key : vehiclePool.keySet()) {
+//            Vehicle vehicle = vehiclePool.get(key).getKey();
+//            tt += getCurrentTime() - vehicle.getEnterTime();
+//            n++;
+//        }
         return n == 0 ? 0 : tt / n;
     }
 
@@ -1019,6 +1053,10 @@ public class Engine {
         return cumulativeTravelTime;
     }
 
+    public void addCumulativeTravelTime(double cumulativeTravelTime) {
+        this.cumulativeTravelTime += cumulativeTravelTime;
+    }
+
     public void setCumulativeTravelTime(double cumulativeTravelTime) {
         this.cumulativeTravelTime = cumulativeTravelTime;
     }
@@ -1049,5 +1087,13 @@ public class Engine {
 
     public void setLaneChangeNotifyBuffer(List<Vehicle> laneChangeNotifyBuffer) {
         this.laneChangeNotifyBuffer = laneChangeNotifyBuffer;
+    }
+
+    public RouterType getRouterType() {
+        return routerType;
+    }
+
+    public void setRouterType(RouterType routerType) {
+        this.routerType = routerType;
     }
 }
