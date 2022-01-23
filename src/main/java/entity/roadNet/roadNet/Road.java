@@ -68,19 +68,28 @@ public class Road {
         }
     }
 
-    public boolean connectedToRoad(Road road) {
+    public RoadLink connectedToRoad(Road road) {
         for (Lane lane : lanes) {
-            if (lane.getLaneLinksToRoad(road).size() != 0) {
-                return true;
+            List<LaneLink> list = lane.getLaneLinksToRoad(road);
+            if (list.size() != 0) {
+                return list.get(0).getRoadLink();
             }
         }
-        return false;
+        return null;
     }
 
     public void reset() {
         for (Lane lane : lanes) {
             lane.reset();
         }
+    }
+
+    public boolean isAnchorPoint(Road nowAnchorPoint) {
+        return this == nowAnchorPoint;
+    }
+
+    public boolean tooSlow(double speed) {
+        return (getAverageSpeed() != -1 && getAverageSpeed() < speed);
     }
 
     public double getWidth() {
@@ -169,4 +178,5 @@ public class Road {
     public void setPlanRouteBuffer(List<Vehicle> planRouteBuffer) {
         this.planRouteBuffer = planRouteBuffer;
     }
+
 }
