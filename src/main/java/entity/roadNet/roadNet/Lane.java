@@ -202,17 +202,18 @@ public class Lane extends Drivable {
 
     public void updateHistory() {
         double speedSum = historyVehicleNum * historyAverageSpeed;
-        while (history.size() > historyLen) {
+        while (history.size() >= historyLen) {
             historyVehicleNum -= history.get(0).getVehicleNum();
             speedSum -= history.get(0).getVehicleNum() * history.get(0).getAverageSpeed();
             history.remove(0);
         }
         double curSpeedSum = 0;
         int vehicleNum = getVehicles().size();
-        historyVehicleNum += vehicleNum;
         for (Vehicle vehicle : getVehicles()) {
             curSpeedSum += vehicle.getSpeed();
         }
+        historyVehicleNum += vehicleNum;
+        speedSum += curSpeedSum;
         history.add(new HistoryRecord(vehicleNum, vehicleNum != 0 ? curSpeedSum / vehicleNum : 0));
         historyAverageSpeed = historyVehicleNum != 0 ? speedSum / historyVehicleNum : 0;
     }
