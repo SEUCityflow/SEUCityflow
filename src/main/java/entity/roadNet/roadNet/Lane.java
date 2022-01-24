@@ -12,9 +12,14 @@ public class Lane extends Drivable {
     private Road belongRoad;
     private List<Vehicle> waitingBuffer;
     private List<HistoryRecord> history;
+    private List<Double> queueingTimeList;
+    private List<Double> periodTimeList;
     private int historyVehicleNum;
     private double historyAverageSpeed;
+    private double sumQueueingTime;
+    private double sumPeriodTime;
     private static final int historyLen = 240;
+    private static final int carToBeCalculate = 120;
 
     public Lane() {
         super();
@@ -23,6 +28,8 @@ public class Lane extends Drivable {
         laneLinks = new ArrayList<>();
         waitingBuffer = new LinkedList<>();
         history = new LinkedList<>();
+        queueingTimeList = new LinkedList<>();
+        periodTimeList = new LinkedList<>();
     }
 
     public Lane(double width, double maxSpeed, int laneIndex, Road belongRoad) {
@@ -36,6 +43,8 @@ public class Lane extends Drivable {
         laneLinks = new ArrayList<>();
         waitingBuffer = new LinkedList<>();
         history = new LinkedList<>();
+        queueingTimeList = new LinkedList<>();
+        periodTimeList = new LinkedList<>();
     }
 
     @Override
@@ -218,6 +227,36 @@ public class Lane extends Drivable {
         historyAverageSpeed = historyVehicleNum != 0 ? speedSum / historyVehicleNum : 0;
     }
 
+    public void addQueueingTime(double time) {
+        while (queueingTimeList.size() >= carToBeCalculate) {
+            sumQueueingTime -= queueingTimeList.get(0);
+            queueingTimeList.remove(0);
+        }
+        queueingTimeList.add(time);
+        sumQueueingTime += time;
+    }
+
+    public void addPeriodTime(double time) {
+        while (periodTimeList.size() >= 6) {
+            sumPeriodTime -= periodTimeList.get(0);
+            periodTimeList.remove(0);
+        }
+        periodTimeList.add(time);
+        sumPeriodTime += time;
+    }
+
+    public double getPeriod() {
+        return periodTimeList.size() == 0 ? 0 : sumPeriodTime / periodTimeList.size() / 2;
+    }
+
+    private double getAverageQueueTime() {
+        return queueingTimeList.size() == 0 ? 0 : sumQueueingTime / queueingTimeList.size();
+    }
+
+    public double getQueueingTimeIndex() {
+        return getPeriod() == 0 ? 0 : getAverageQueueTime() / getPeriod();
+    }
+
     public int getHistoryVehicleNum() {
         return historyVehicleNum;
     }
@@ -264,5 +303,37 @@ public class Lane extends Drivable {
 
     public void setHistoryAverageSpeed(double historyAverageSpeed) {
         this.historyAverageSpeed = historyAverageSpeed;
+    }
+
+    public List<Double> getQueueingTimeList() {
+        return queueingTimeList;
+    }
+
+    public List<Double> getPeriodTimeList() {
+        return periodTimeList;
+    }
+
+    public void setQueueingTimeList(List<Double> queueingTimeList) {
+        this.queueingTimeList = queueingTimeList;
+    }
+
+    public void setPeriodTimeList(List<Double> periodTimeList) {
+        this.periodTimeList = periodTimeList;
+    }
+
+    public double getSumQueueingTime() {
+        return sumQueueingTime;
+    }
+
+    public void setSumQueueingTime(double sumQueueingTime) {
+        this.sumQueueingTime = sumQueueingTime;
+    }
+
+    public double getSumPeriodTime() {
+        return sumPeriodTime;
+    }
+
+    public void setSumPeriodTime(double sumPeriodTime) {
+        this.sumPeriodTime = sumPeriodTime;
     }
 }
