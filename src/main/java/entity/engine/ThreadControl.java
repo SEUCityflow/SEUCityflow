@@ -210,7 +210,7 @@ class ThreadControl implements Runnable {
                 Pair<Road, Integer> routeToBeCheck = route.get(2);
                 Road roadToBeCheck = routeToBeCheck.getKey();
                 int pos = routeToBeCheck.getValue();
-                if (!roadToBeCheck.isAnchorPoint(anchorPoints.get(pos)) && roadToBeCheck.tooSlow(6)) {// TODO: 堵车速度设置
+                if (!roadToBeCheck.isAnchorPoint(anchorPoints.get(pos)) && roadToBeCheck.isCongestion()) {
                     Pair<Road, Integer> start = route.get(1);
                     route.subList(2, route.size()).clear();
                     router.dijkstra(start.getKey(), anchorPoints.get(pos), route, pos);

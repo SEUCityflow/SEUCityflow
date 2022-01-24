@@ -6,6 +6,8 @@ import entity.archive.Archive;
 import entity.flow.Flow;
 import entity.flow.Route;
 import entity.roadNet.roadNet.*;
+import entity.roadNet.trafficLight.LightPhase;
+import entity.roadNet.trafficLight.TrafficLight;
 import entity.vehicle.laneChange.LaneChange;
 import entity.vehicle.router.RouterType;
 import entity.vehicle.vehicle.Vehicle;
@@ -149,12 +151,10 @@ public class Engine {
             dir = getStringFromJsonObject(configValues, "dir");
             try {
                 String jsonRouteType = getStringFromJsonObject(configValues, "routeType");
-                System.out.println(jsonRouteType);
                 routerType = typeNameMap.get(jsonRouteType);
             } catch (JsonMemberMiss jsonMemberMiss) {
-                jsonMemberMiss.printStackTrace();
-            } finally {
                 routerType = RouterType.LENGTH;
+                jsonMemberMiss.printStackTrace();
             }
             String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
             String flowFile = getStringFromJsonObject(configValues, "flowFile");
@@ -754,7 +754,10 @@ public class Engine {
             System.out.println("please set rlTrafficLight to true to enable traffic light control");
             return;
         }
-        roadNet.getIntersectionById(id).getTrafficLight().setPhase(phaseIndex);
+        TrafficLight trafficLight = roadNet.getIntersectionById(id).getTrafficLight();
+        LightPhase lastPhase = trafficLight.getPhases().get(trafficLight.getCurPhaseIndex());
+        trafficLight.updateCumulateTime(phaseIndex, trafficLight.getCurPhaseIndex(), lastPhase.getTime() - trafficLight.getRemainDuration());
+        trafficLight.setCurPhaseIndex(phaseIndex);
     }
 
     public void setReplayLogFile(String logFile) throws IOException {
