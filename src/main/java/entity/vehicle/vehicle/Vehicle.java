@@ -28,6 +28,7 @@ public class Vehicle {
     private Engine engine;
     private boolean routeValid = true;
     private Flow flow;
+    private double startQueueingTime;
 
     // 用于 archive file->archive
     public Vehicle() {
@@ -36,6 +37,7 @@ public class Vehicle {
         buffer = new Buffer();
         laneChangeInfo = new LaneChangeInfo();
         laneChange = new SimpleLaneChange(this);
+        startQueueingTime = -1;
     }
 
     // 用于 archive new VehiclePool
@@ -51,6 +53,7 @@ public class Vehicle {
         laneChangeInfo = new LaneChangeInfo(vehicle.laneChangeInfo);
         laneChange = new SimpleLaneChange(this, vehicle.laneChange);
         routeValid = vehicle.routeValid;
+        startQueueingTime = vehicle.startQueueingTime;
     }
 
     // shadow 创建，除 laneChange（新建）和 flow（nullptr）与 router.vehicle 外全部一致
@@ -65,6 +68,7 @@ public class Vehicle {
         enterTime = vehicle.enterTime;
         laneChangeInfo = new LaneChangeInfo(vehicle.laneChangeInfo);
         laneChange = new SimpleLaneChange(this);
+        this.startQueueingTime = vehicle.startQueueingTime;
     }
 
     // 用于 flow
@@ -96,6 +100,7 @@ public class Vehicle {
         enterTime = engine.getCurrentTime();
         laneChangeInfo = new LaneChangeInfo();
         laneChange = new SimpleLaneChange(this);
+        startQueueingTime = -1;
     }
 
     // 由 dis 算出当前在哪条 drivable 上并更新 buffer
@@ -112,6 +117,15 @@ public class Vehicle {
                 if (nextDrivable == null) {  // 没有下一 drivable 且 dis 大于当前 drivable 长度，即此时已到达末尾
                     assert (controllerInfo.getRouter().isLastRoad(drivable));
                     setBufferEnd(true);
+                }
+                if (drivable.isLane()) {
+                    Lane nowLane = (Lane) drivable;
+                    if (startQueueingTime != -1) {
+                        nowLane.addQueueingTime(engine.getCurrentTime() - startQueueingTime);
+                    } else {
+                        nowLane.addQueueingTime(0);
+                    }
+                    startQueueingTime = -1;
                 }
                 drivable = nextDrivable;
                 setBufferDrivable(drivable);  // 新 drivable 存入 buffer
@@ -373,6 +387,9 @@ public class Vehicle {
             v = Math.min(v, getIntersectionRelatedSpeed(interval)); // 过 intersection 速度
         }
         v = Math.max(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval); // 能减到的最小速度
+        if (v == 0 && startQueueingTime == -1) {
+            startQueueingTime = engine.getCurrentTime();
+        }
         return v;
     }
 
@@ -538,8 +555,8 @@ public class Vehicle {
     }
 
     public void abortLaneChange() {// 由 shadow 调用，终止 laneChange
-        setBufferEnd(true);
         laneChange.abortChanging();
+        setBufferEnd(true);
     }
 
     public void finishChanging() {
