@@ -164,7 +164,7 @@ class ThreadControl implements Runnable {
                 if (vehicle.hasSetEnd()) { // 已跑完 route 或 vehicle.finishChange 或 shadow.abortChange，此时 vehicle 将被 delete
                     synchronized (engine) {
                         engine.getVehicleRemoveBuffer().add(vehicle);
-                        if (!vehicle.getLaneChange().isFinished()) {
+                        if (!vehicle.getLaneChange().isFinished() && vehicle.isReal()) {
                             engine.getVehicleMap().remove(vehicle.getId());
                             engine.setFinishedVehicleCnt(engine.getFinishedVehicleCnt() + 1);
                             engine.addCumulativeTravelTime(engine.getCurrentTime() - vehicle.getEnterTime());
