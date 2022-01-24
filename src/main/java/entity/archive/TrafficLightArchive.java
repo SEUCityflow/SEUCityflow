@@ -2,6 +2,8 @@ package entity.archive;
 
 import com.alibaba.fastjson.annotation.JSONField;
 
+import java.util.List;
+
 class TrafficLightArchive {
     @JSONField(name = "trafficId", ordinal = 1)
     private String trafficId;
@@ -9,6 +11,8 @@ class TrafficLightArchive {
     private double remainDuration;
     @JSONField(name = "curPhaseIndex", ordinal = 3)
     private int curPhaseIndex;
+    @JSONField(name = "cumulateTimes", ordinal = 4)
+    private List<Double> cumulateTimes;
 
     public String getTrafficId() {
         return trafficId;
@@ -32,5 +36,13 @@ class TrafficLightArchive {
 
     public void setCurPhaseIndex(int curPhaseIndex) {
         this.curPhaseIndex = curPhaseIndex;
+    }
+
+    public List<Double> getCumulateTimes() {
+        return cumulateTimes;
+    }
+
+    public void setCumulateTimes(List<Double> cumulateTimes) {
+        this.cumulateTimes = cumulateTimes;
     }
 }
