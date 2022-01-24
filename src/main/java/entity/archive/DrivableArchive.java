@@ -20,6 +20,14 @@ class DrivableArchive {
     private int historyVehicleNum;
     @JSONField(name = "historyAverageSpeed", ordinal = 6)
     private double historyAverageSpeed;
+    @JSONField(name = "queueingTimeList", ordinal = 7)
+    private List<Double> queueingTimeList;
+    @JSONField(name = "periodTimeList", ordinal = 8)
+    private List<Double> periodTimeList;
+    @JSONField(name = "sumQueueingTime", ordinal = 9)
+    private double sumQueueingTime;
+    @JSONField(name = "sumPeriodTime", ordinal = 10)
+    private double sumPeriodTime;
 
     public DrivableArchive() {
         vehicles = new ArrayList<>();
@@ -73,5 +81,37 @@ class DrivableArchive {
 
     public void setHistoryAverageSpeed(double historyAverageSpeed) {
         this.historyAverageSpeed = historyAverageSpeed;
+    }
+
+    public List<Double> getQueueingTimeList() {
+        return queueingTimeList;
+    }
+
+    public void setQueueingTimeList(List<Double> queueingTimeList) {
+        this.queueingTimeList = queueingTimeList;
+    }
+
+    public List<Double> getPeriodTimeList() {
+        return periodTimeList;
+    }
+
+    public void setPeriodTimeList(List<Double> periodTimeList) {
+        this.periodTimeList = periodTimeList;
+    }
+
+    public double getSumQueueingTime() {
+        return sumQueueingTime;
+    }
+
+    public void setSumQueueingTime(double sumQueueingTime) {
+        this.sumQueueingTime = sumQueueingTime;
+    }
+
+    public double getSumPeriodTime() {
+        return sumPeriodTime;
+    }
+
+    public void setSumPeriodTime(double sumPeriodTime) {
+        this.sumPeriodTime = sumPeriodTime;
     }
 }

@@ -222,6 +222,10 @@ public class Archive {
             drivableArchive.setHistory(lane.getHistory());
             drivableArchive.setHistoryVehicleNum(lane.getHistoryVehicleNum());
             drivableArchive.setHistoryAverageSpeed(lane.getHistoryAverageSpeed());
+            drivableArchive.setQueueingTimeList(lane.getQueueingTimeList());
+            drivableArchive.setPeriodTimeList(lane.getPeriodTimeList());
+            drivableArchive.setSumPeriodTime(lane.getSumPeriodTime());
+            drivableArchive.setSumQueueingTime(lane.getSumQueueingTime());
         }
     }
 
@@ -239,6 +243,7 @@ public class Archive {
         trafficLightArchive.setTrafficId(light.getIntersection().getId());
         trafficLightArchive.setCurPhaseIndex(light.getCurPhaseIndex());
         trafficLightArchive.setRemainDuration(light.getRemainDuration());
+        trafficLightArchive.setCumulateTimes(light.getCumulateTimes());
     }
 
     private void archiveVehicleInfo(VehicleInfo vehicleInfo, VehicleInfoArchive vehicleInfoArchive) {
@@ -416,6 +421,10 @@ public class Archive {
                 lane.setHistory(archive.getHistory());
                 lane.setHistoryVehicleNum(archive.getHistoryVehicleNum());
                 lane.setHistoryAverageSpeed(archive.getHistoryAverageSpeed());
+                lane.setQueueingTimeList(archive.getQueueingTimeList());
+                lane.setPeriodTimeList(archive.getPeriodTimeList());
+                lane.setSumPeriodTime(archive.getSumPeriodTime());
+                lane.setSumQueueingTime(archive.getSumQueueingTime());
             }
         }
         // flow
@@ -433,6 +442,7 @@ public class Archive {
             TrafficLight light = engine.getRoadNet().getInterMap().get(archive.getTrafficId()).getTrafficLight();
             light.setRemainDuration(archive.getRemainDuration());
             light.setCurPhaseIndex(archive.getCurPhaseIndex());
+            light.setCumulateTimes(archive.getCumulateTimes());
         }
     }
 
