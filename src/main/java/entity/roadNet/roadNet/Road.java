@@ -14,6 +14,7 @@ public class Road {
     private List<Lane> lanes;
     private List<Point> points; // 起点为 startIntersection 中心，终点为 endIntersection 中心
     private List<Vehicle> planRouteBuffer;
+    private static final double congestionIndex = 1.5;
 
     public void initLanePoints() {
         double dsum = 0;
@@ -88,8 +89,12 @@ public class Road {
         return this == nowAnchorPoint;
     }
 
-    public boolean tooSlow(double speed) {
-        return (getAverageSpeed() != -1 && getAverageSpeed() < speed);
+    public boolean isCongestion() {
+        double qtiMax = 0;
+        for (Lane lane : lanes) {
+            qtiMax = Math.max(qtiMax, lane.getQueueingTimeIndex());
+        }
+        return qtiMax >= congestionIndex;
     }
 
     public double getWidth() {
