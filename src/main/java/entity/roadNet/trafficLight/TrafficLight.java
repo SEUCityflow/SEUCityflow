@@ -1,24 +1,25 @@
 package entity.roadNet.trafficLight;
 
 import entity.roadNet.roadNet.Intersection;
+import entity.roadNet.roadNet.Lane;
+import entity.roadNet.roadNet.LaneLink;
+import entity.roadNet.roadNet.RoadLink;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class TrafficLight {
     private Intersection intersection;
     private List<LightPhase> phases;
     private double remainDuration;
     private int curPhaseIndex;
-    private List<Double> time;
+    private double[] time;
     private double period;
+    private List<Double> cumulateTimes;
 
     public TrafficLight() {
         phases = new ArrayList<>();
-        time = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            time.add((double) 0);
-        }
+        time = new double[3];
+        cumulateTimes = new LinkedList<>();
     }
 
     public void init(int initPhaseIndex) {
@@ -48,17 +49,34 @@ public class TrafficLight {
     public void passTime(double seconds) { // 时间过了 seconds
         remainDuration -= seconds;
         while (remainDuration <= 0.0) {
+            updateCumulateTime((curPhaseIndex + 1) % phases.size(), curPhaseIndex, phases.get(curPhaseIndex).getTime());
             curPhaseIndex = (curPhaseIndex + 1) % phases.size();
             remainDuration += phases.get(curPhaseIndex).getTime();
         }
     }
 
-    public double getExpectedWaitingTime(int p) {
-        return (period - time.get(p)) * (period - time.get(p)) / period / 2;
+    public void updateCumulateTime(int newPhaseIndex, int lastPhaseIndex, double time) {
+        List<Boolean> newRoadLinkAvailable = phases.get(newPhaseIndex).getRoadLinkAvailable();
+        List<Boolean> lastRoadLinkAvailable = phases.get(lastPhaseIndex).getRoadLinkAvailable();
+        for (int i = 0; i < newRoadLinkAvailable.size(); i++) {
+            if (lastRoadLinkAvailable.get(i) != newRoadLinkAvailable.get(i)) {
+                RoadLink roadLink = intersection.getRoadLinks().get(i);
+                Set<Lane> set = new HashSet<>();
+                for (LaneLink laneLink : roadLink.getLaneLinks()) {
+                    set.add(laneLink.getStartLane());
+                }
+                for (Lane lane : set) {
+                    lane.addPeriodTime(cumulateTimes.get(i));
+                }
+                cumulateTimes.set(i, (double) 0);
+            } else {
+                cumulateTimes.set(i, cumulateTimes.get(i) + time);
+            }
+        }
     }
 
-    public void setPhase(int phaseIndex) {
-        curPhaseIndex = phaseIndex;
+    public double getExpectedWaitingTime(int p) {
+        return (period - time[p]) * (period - time[p]) / period / 2;
     }
 
     public void reset() {
@@ -87,13 +105,14 @@ public class TrafficLight {
 
     public void setCurPhaseIndex(int curPhaseIndex) {
         this.curPhaseIndex = curPhaseIndex;
+        remainDuration = phases.get(curPhaseIndex).getTime();
     }
 
-    public List<Double> getTime() {
+    public double[] getTime() {
         return time;
     }
 
-    public void setTime(List<Double> time) {
+    public void setTime(double[] time) {
         this.time = time;
     }
 
@@ -103,5 +122,13 @@ public class TrafficLight {
 
     public void setPeriod(double period) {
         this.period = period;
+    }
+
+    public List<Double> getCumulateTimes() {
+        return cumulateTimes;
+    }
+
+    public void setCumulateTimes(List<Double> cumulateTimes) {
+        this.cumulateTimes = cumulateTimes;
     }
 }

@@ -101,6 +101,7 @@ public class RoadNet {
             trafficLight.getPhases().add(lightPhase);
             for (int j = 0; j < trafficLight.getIntersection().getRoadLinks().size(); j++) {
                 lightPhase.getRoadLinkAvailable().add(false);
+                trafficLight.getCumulateTimes().add((double) 0);
             }
             loadLightPhase(curLightPhase, lightPhase);
             int pos = 0;
@@ -109,13 +110,13 @@ public class RoadNet {
                 if (flag) {
                     switch (intersection.getRoadLinks().get(pos).getType()) {
                         case turn_right:
-                            trafficLight.getTime().set(0, trafficLight.getTime().get(0) + lightPhase.getTime());
+                            (trafficLight.getTime())[0] += lightPhase.getTime();
                             break;
                         case turn_left:
-                            trafficLight.getTime().set(1, trafficLight.getTime().get(1) + lightPhase.getTime());
+                            (trafficLight.getTime())[1] += lightPhase.getTime();
                             break;
                         case go_straight:
-                            trafficLight.getTime().set(2, trafficLight.getTime().get(2) + lightPhase.getTime());
+                            (trafficLight.getTime())[2] += lightPhase.getTime();
                             break;
                     }
                     pos++;
@@ -161,6 +162,11 @@ public class RoadNet {
         trafficLight.setIntersection(intersection);
         JSONObject trafficLightValue = getJsonMemberObject(object, "trafficLight");
         loadTrafficLight(trafficLightValue, trafficLight);
+        // traffic period time
+        for (int j = 0; j < trafficLight.getPhases().size(); j++) {
+            int last = (j - 1 + trafficLight.getPhases().size()) % trafficLight.getPhases().size();
+            trafficLight.updateCumulateTime(j, last, trafficLight.getPhases().get(last).getTime());
+        }
     }
 
     private void loadRoads(JSONObject object, Road road) {
