@@ -536,14 +536,19 @@ public class Engine {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        finished = true;
-        int cnt = 7;
-        if (isLaneChange()) {
-            cnt += 2;
-        }
-        for (int i = 0; i < cnt; i++) {
-            startBarrier.Wait();
-            endBarrier.Wait();
+        try {
+            Thread.sleep(100);
+            finished = true;
+            int cnt = 7;
+            if (isLaneChange()) {
+                cnt += 2;
+            }
+            for (int i = 0; i < cnt; i++) {
+                startBarrier.Wait();
+                endBarrier.Wait();
+            }
+        } catch (InterruptedException exception) {
+            exception.printStackTrace();
         }
         threadExecutor.shutdown();
     }
