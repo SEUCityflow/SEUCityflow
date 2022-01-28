@@ -1,5 +1,5 @@
 {
-  "interval": 0.5,
+  "interval": 0.3,
   "seed": 0,
   "dir": "src/test/resources/1x1/",
   "roadnetFile": "roadnet.json",
