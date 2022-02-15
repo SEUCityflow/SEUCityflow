@@ -207,7 +207,7 @@ public class Engine {
     }
 
     // nextStep
-    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer, List<Vehicle> buffer2) {
+    private double calculateSpeed(Vehicle vehicle) {
         double nextSpeed;
         if (vehicle.hasSetSpeed()) {//已作为 partner 被设定过速度
             nextSpeed = vehicle.getBufferSpeed();
@@ -225,29 +225,33 @@ public class Engine {
                 }
             }
         }
-        double deltaDis;
+        vehicle.setBufferSpeed(nextSpeed);
+        return nextSpeed;
+    }
+
+    private double calculateDistanced(Vehicle vehicle, double nextSpeed) {
         double speed = vehicle.getSpeed();
-        if (nextSpeed < 0) {  // 存在先前计算导致速度为负时实际情况为停车后倒车
+        double deltaDis;
+        if (nextSpeed == 0) {  // 存在先前计算导致速度为负时实际情况为停车后倒车
             deltaDis = 0.5 * speed * speed / vehicle.getMaxNegAcc(); // 到停车为止
-            nextSpeed = 0;
         } else {
             deltaDis = (speed + nextSpeed) * interval / 2;
         }
-        vehicle.setBufferSpeed(nextSpeed);    // speed 设置
-        vehicle.setDeltaDistance(deltaDis); // drivable、dis 设置
+        return deltaDis;
+    }
 
+    private void calculateOffset(Vehicle vehicle, double nextSpeed) {
         if (laneChange) {
             if (!vehicle.isReal() && vehicle.getChangedDrivable() != null) { // 当前为 shadow 在此阶段行驶 deltaDis 后发生 drivable 变化
                 vehicle.abortLaneChange();                                      // 放弃此次 laneChange 并清除 partner laneChange 状态
             }
-
             if (vehicle.isChanging()) {
                 int dir = vehicle.getLaneChangeDirection();                                                     // 0:直行，1:outerLane，-1:innerLane
                 double laneChangeSpeed = Math.max(0.2 * nextSpeed, 1);
                 double newOffSet = Math.abs(vehicle.getOffSet() + laneChangeSpeed * interval * dir); // 横向偏移量计算
                 newOffSet = Math.min(newOffSet, vehicle.getMaxOffSet());
                 vehicle.setOffSet(newOffSet * dir); // 更新偏移量
-                if (newOffSet >= vehicle.getMaxOffSet()) {              // laneChange 完成
+                if (newOffSet >= vehicle.getMaxOffSet()) { // laneChange 完成
                     synchronized (this) {
                         vehicleMap.remove(vehicle.getPartner().getId());    // 清除 shadow 的映射
                         vehicleMap.put(vehicle.getId(), vehicle.getPartner()); // 完成 laneChange，自己成为 shadow
@@ -256,11 +260,46 @@ public class Engine {
                 }
             }
         }
+    }
+
+    private void checkDrivableChange(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer, List<Vehicle> buffer2) {
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {// 发生 drivable 变动且此时尚未到达 end
             Pair<Vehicle, Double> pair = new Pair<>(vehicle, vehicle.getBufferDis());
             buffer.add(pair);
             if (vehicle.getBufferDrivable().isLane()) {
                 buffer2.add(vehicle);
+            }
+        }
+    }
+
+    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer, List<Vehicle> buffer2) {
+        double nextSpeed = calculateSpeed(vehicle);
+        double deltaDis = calculateDistanced(vehicle, nextSpeed);
+        calculateOffset(vehicle, nextSpeed);
+        vehicle.setBufferSpeed(nextSpeed);
+        vehicle.setDeltaDistance(deltaDis); // drivable、dis 设置
+        checkDrivableChange(vehicle, buffer, buffer2);
+        if (vehicle.isGrouped()) {
+            if (nextSpeed > vehicle.getCurDrivable().getMaxSpeed() * Vehicle.Alpha) {
+                for (Vehicle vehicle1 : vehicle.getSegment().getVehicles()) {
+                    if (vehicle == vehicle1) {
+                        continue;
+                    }
+                    nextSpeed = calculateSpeed(vehicle1);
+                    deltaDis = calculateDistanced(vehicle1, nextSpeed);
+                    calculateOffset(vehicle1, nextSpeed);
+                    vehicle1.setBufferSpeed(nextSpeed);
+                    vehicle1.setDeltaDistance(deltaDis);
+                    checkDrivableChange(vehicle1, buffer, buffer2);
+                }
+            } else {
+                for (Vehicle vehicle1 : vehicle.getSegment().getVehicles()) {
+                    if (vehicle == vehicle1) {
+                        continue;
+                    }
+                    vehicle1.setBufferSpeed(nextSpeed);
+                    vehicle1.setDeltaDistance(deltaDis);
+                }
             }
         }
     }
@@ -332,7 +371,7 @@ public class Engine {
                 lane.getVehicles().addAll(segment.getVehicles());
             }
         }
-        for (Drivable drivable : roadNet.getDrivables()) {
+        for (Drivable drivable : roadNet.getDrivables()) { // can be improved
             if (drivable.getVehicles().size() != 0) {
                 drivable.getVehicles().getFirst().updateLeaderAndGap(null);
             }
@@ -386,6 +425,11 @@ public class Engine {
         endBarrier.Wait();
     }
 
+    private void finishStep() {
+        startBarrier.Wait();
+        endBarrier.Wait();
+    }
+
     private void updateLog() throws IOException {
         StringBuilder stringBuilder = new StringBuilder();
         for (Vehicle vehicle : getRunningVehicle()) {
@@ -420,6 +464,11 @@ public class Engine {
         logOut.write(String.valueOf(stringBuilder));
     }
 
+    private void buildGroup() {
+        startBarrier.Wait();
+        endBarrier.Wait();
+    }
+
     private void notifyCross() {
         startBarrier.Wait();
         endBarrier.Wait();
@@ -441,17 +490,18 @@ public class Engine {
         }
         planRoute();
         handleWaiting();
+        initSegments();
         if (laneChange) {
-            initSegments();
             planLaneChange();
-//            updateLeaderAndGap();
         }
+        buildGroup();
         notifyCross();
         getAction();
         updateLocation();
         updateAction();
         updateLeaderAndGap();
         updateShorterRoute();
+        finishStep();
         if (!rlTrafficLight) {
             for (Intersection intersection : roadNet.getIntersections()) {
                 if (intersection.isVirtual()) {
@@ -539,9 +589,9 @@ public class Engine {
         try {
             Thread.sleep(100);
             finished = true;
-            int cnt = 7;
+            int cnt = 10;
             if (isLaneChange()) {
-                cnt += 2;
+                cnt += 1;
             }
             for (int i = 0; i < cnt; i++) {
                 startBarrier.Wait();

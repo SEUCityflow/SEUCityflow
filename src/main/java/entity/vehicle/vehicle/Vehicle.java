@@ -29,6 +29,8 @@ public class Vehicle {
     private boolean routeValid = true;
     private Flow flow;
     private double startQueueingTime;
+    private Vehicle groupLeader;
+    public static final int Alpha = 0;
 
     // 用于 archive file->archive
     public Vehicle() {
@@ -430,6 +432,18 @@ public class Vehicle {
             }
         }
         return v;
+    }
+
+    public Segment getSegment() {
+        if (getCurDrivable().isLaneLink()) {
+            return null;
+        }
+        return ((Lane)getCurDrivable()).getSegment(getSegmentIndex());
+    }
+
+    public boolean isGrouped() {
+        Drivable drivable = getCurDrivable();
+        return drivable.isLane() && getSegment().isGrouped();
     }
 
     public Road getFirstRoad() {
@@ -1027,6 +1041,14 @@ public class Vehicle {
 
     public double getOffSet() {
         return laneChangeInfo.getOffSet();
+    }
+
+    public Vehicle getGroupLeader() {
+        return groupLeader;
+    }
+
+    public void setGroupLeader(Vehicle groupLeader) {
+        this.groupLeader = groupLeader;
     }
 
     // 对应 id 车辆信息获取 <title, info>

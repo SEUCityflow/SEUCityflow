@@ -10,6 +10,7 @@ public class Segment {
     private double startPos;
     private double endPos;
     private List<Vehicle> vehicles;
+    private boolean isGrouped;
 
     public Segment() {
         vehicles = new LinkedList<>();
@@ -21,6 +22,26 @@ public class Segment {
         this.startPos = startPos;
         this.endPos = endPos;
         vehicles = new LinkedList<>();
+    }
+
+    public double getAverageSpeed() {
+        double sum = 0;
+        for (Vehicle vehicle : vehicles) {
+            sum += vehicle.getSpeed();
+        }
+        return vehicles.size() == 0 ? -1 : sum / vehicles.size();
+    }
+
+    public void buildGroup() {
+        isGrouped = true;
+        Vehicle leader = vehicles.get(0);
+        for (int i = 1; i < vehicles.size(); i++) {
+            vehicles.get(i).setGroupLeader(leader);
+        }
+    }
+
+    public boolean canGroup() {
+        return index != belongLane.getSegmentNum() - 1 && getAverageSpeed() != -1 && getAverageSpeed() <= belongLane.getMaxSpeed() * Vehicle.Alpha;
     }
 
     public double getStartPos() {
@@ -80,4 +101,11 @@ public class Segment {
         this.endPos = endPos;
     }
 
+    public boolean isGrouped() {
+        return isGrouped;
+    }
+
+    public void setGrouped(boolean grouped) {
+        isGrouped = grouped;
+    }
 }

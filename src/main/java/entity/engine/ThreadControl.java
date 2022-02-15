@@ -83,6 +83,20 @@ class ThreadControl implements Runnable {
         endBarrier.Wait();
     }
 
+    private void threadBuildGroup() {
+        startBarrier.Wait();
+        for (Road road : roads) {
+            for (Lane lane : road.getLanes()) {
+                for (Segment segment : lane.getSegments()) {
+                    if (segment.canGroup()) {
+                        segment.buildGroup();
+                    }
+                }
+            }
+        }
+        endBarrier.Wait();
+    }
+
     private void threadNotifyCross() {
         startBarrier.Wait();
         for (Intersection intersection : intersections) {
@@ -142,7 +156,7 @@ class ThreadControl implements Runnable {
         startBarrier.Wait();
         List<Pair<Vehicle, Double>> buffer = new LinkedList<>();
         for (Vehicle vehicle : vehicles) {
-            if (vehicle.isCurRunning()) {
+            if (vehicle.isCurRunning() && vehicle.getGroupLeader() == null) {
                 engine.vehicleControl(vehicle, buffer, vehiclesEnterLane); //计算 speed、dis等信息
             }
         }
@@ -228,20 +242,36 @@ class ThreadControl implements Runnable {
         endBarrier.Wait();
     }
 
+    private void threadFinishStep() {
+        startBarrier.Wait();
+        for (Vehicle vehicle : vehicles) {
+            vehicle.setGroupLeader(null);
+        }
+        for (Road road : roads) {
+            for (Lane lane : road.getLanes()) {
+                for (Segment segment : lane.getSegments()) {
+                    segment.setGrouped(false);
+                }
+            }
+        }
+        endBarrier.Wait();
+    }
+
     public void run() {
         while (!engine.getFinished()) {
             threadPlanRoute();
+            threadInitSegments();
             if (engine.isLaneChange()) {
-                threadInitSegments();
                 threadPlanLaneChange();
-//                threadUpdateLeaderAndGap();
             }
+            threadBuildGroup();
             threadNotifyCross();
             threadGetAction();
             threadUpdateLocation();
             threadUpdateAction();
             threadUpdateLeaderAndGap();
             threadUpdateShorterRoute();
+            threadFinishStep();
         }
     }
 
