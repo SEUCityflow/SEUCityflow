@@ -112,7 +112,10 @@ public abstract class LaneChange {
         shadow.updateRouter();       // 更新 shadow iCurRoad 与 清除 planned
 
         targetSeg.insertVehicle(shadow); // 更新 targetLane 对应 segment
-
+        targetSeg.disband();
+        if (targetSeg.canGroup()) {
+            targetSeg.buildGroup();
+        }
         if (targetLeader != null) { // 更新 shadow 与前车距离
             shadow.updateLeaderAndGap(targetLeader);
         }

@@ -55,9 +55,15 @@ class ThreadControl implements Runnable {
         List<Vehicle> buffer = new ArrayList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning() && vehicle.isReal()) {
-                vehicle.makeLaneChangeSignal(engine.getInterval());
-                if (vehicle.planLaneChange()) {
-                    buffer.add(vehicle);
+                if (vehicle.isGrouped()) {
+                    if (vehicle.isChanging()) {
+                        buffer.add(vehicle);
+                    }
+                } else {
+                    vehicle.makeLaneChangeSignal(engine.getInterval());
+                    if (vehicle.planLaneChange()) {
+                        buffer.add(vehicle);
+                    }
                 }
             }
         }
@@ -78,20 +84,6 @@ class ThreadControl implements Runnable {
             }
             if (drivable.isLane()) {
                 ((Lane) drivable).updateHistory();
-            }
-        }
-        endBarrier.Wait();
-    }
-
-    private void threadBuildGroup() {
-        startBarrier.Wait();
-        for (Road road : roads) {
-            for (Lane lane : road.getLanes()) {
-                for (Segment segment : lane.getSegments()) {
-                    if (segment.canGroup()) {
-                        segment.buildGroup();
-                    }
-                }
             }
         }
         endBarrier.Wait();
@@ -242,21 +234,6 @@ class ThreadControl implements Runnable {
         endBarrier.Wait();
     }
 
-    private void threadFinishStep() {
-        startBarrier.Wait();
-        for (Vehicle vehicle : vehicles) {
-            vehicle.setGroupLeader(null);
-        }
-        for (Road road : roads) {
-            for (Lane lane : road.getLanes()) {
-                for (Segment segment : lane.getSegments()) {
-                    segment.setGrouped(false);
-                }
-            }
-        }
-        endBarrier.Wait();
-    }
-
     public void run() {
         while (!engine.getFinished()) {
             threadPlanRoute();
@@ -264,14 +241,12 @@ class ThreadControl implements Runnable {
             if (engine.isLaneChange()) {
                 threadPlanLaneChange();
             }
-            threadBuildGroup();
             threadNotifyCross();
             threadGetAction();
             threadUpdateLocation();
             threadUpdateAction();
             threadUpdateLeaderAndGap();
             threadUpdateShorterRoute();
-            threadFinishStep();
         }
     }
 

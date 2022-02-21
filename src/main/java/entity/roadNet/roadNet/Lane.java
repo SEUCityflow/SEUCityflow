@@ -137,6 +137,7 @@ public class Lane extends Drivable {
         int end = 0;
         for (int i = segments.size() - 1; i >= 0; i--) {
             Segment segment = segments.get(i);
+            segment.disband();
             while (iter.hasNext()) {
                 Vehicle vehicle = iter.next();
                 if (vehicle.getCurDis() >= segment.getStartPos()) {
@@ -148,6 +149,9 @@ public class Lane extends Drivable {
                 }
             }
             segment.setVehicles(new LinkedList<>(vehicles.subList(start, end)));
+            if (segment.canGroup()) {
+                segment.buildGroup();
+            }
             start = end;
         }
     }

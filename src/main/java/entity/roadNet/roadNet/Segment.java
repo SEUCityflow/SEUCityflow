@@ -32,9 +32,20 @@ public class Segment {
         return vehicles.size() == 0 ? -1 : sum / vehicles.size();
     }
 
+    public void disband() {
+        if (!isGrouped) {
+            return;
+        }
+        isGrouped = false;
+        for (Vehicle vehicle : vehicles) {
+            vehicle.setGroupLeader(null);
+        }
+    }
+
     public void buildGroup() {
         isGrouped = true;
         Vehicle leader = vehicles.get(0);
+        leader.setGroupLeader(null);
         for (int i = 1; i < vehicles.size(); i++) {
             vehicles.get(i).setGroupLeader(leader);
         }
