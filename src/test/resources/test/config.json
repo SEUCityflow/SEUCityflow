@@ -3,11 +3,11 @@
   "seed": 4768,
   "dir": "src/test/resources/test/",
   "roadnetFile": "roadnet_4_4_turn.json",
-  "flowFile": "flow1.json",
+  "flowFile": "flow5.json",
   "rlTrafficLight": false,
   "laneChange": true,
-  "saveReplay": false,
-  "routeType": "RANDOM",
+  "saveReplay": true,
+  "routeType": "LENGTH",
   "roadnetLogFile": "roadnet.json",
   "replayLogFile": "replay_LaneChange.txt"
 }
