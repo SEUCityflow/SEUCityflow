@@ -16,42 +16,40 @@ public class SimpleLaneChange extends LaneChange {
     }
 
     public void makeSignal(double interval) {
-        if (changing || vehicle.getEngine().getCurrentTime() - lastChangeTime < coolingTime) {
+        if (changing || vehicle.getEngine().getCurrentTime() - lastChangeTime < coolingTime || vehicle.getCurDrivable().isLaneLink() || vehicle.isGrouped()) {
             return;
         }
         signalSend = new Signal();
         signalSend.setSource(vehicle);
-        if (vehicle.getCurDrivable().isLane()) {
-            Lane curLane = vehicle.getCurLane();
-            if (curLane.getLength() - vehicle.getCurDis() < 30) {
-                return;
-            }
-            double curEst = vehicle.getGap();
-            double outerEst = 0;
-            double innerEst;
-            double expectGap = 2 * vehicle.getLen() + 4 * interval * vehicle.getMaxSpeed();
-            if (curEst > expectGap || curEst < 1.5 * vehicle.getLen()) {
-                return;
-            }
-            Router router = vehicle.getCurRouter();
-            if (curLane.getLaneIndex() < curLane.getBeLongRoad().getLanes().size() - 1) {
-                if (router.onLastRoad() || router.getNextDrivable(curLane.getOuterLane()) != null) { // 已到 route 末尾或者外侧路满足通行要求
-                    outerEst = estimateGap(curLane.getOuterLane());                          // 与外侧前车间距
-                    if (outerEst > curEst + vehicle.getLen()) {                           // 外侧车距要求大于当前车距 + 车厂 （不应该再加个 safeGapBefore ?）
-                        signalSend.setTarget(curLane.getOuterLane());                         // signal 传向外侧
-                    }
-                }
-            }
-
-            if (curLane.getLaneIndex() > 0) { // 当前不在最内侧，则测试内侧 lane 是否满足 laneChange 需求
-                if (router.onLastRoad() || router.getNextDrivable(curLane.getInnerLane()) != null) {
-                    innerEst = estimateGap(curLane.getInnerLane());
-                    if (innerEst > curEst + vehicle.getLen() && innerEst > outerEst) // 转向间距更大的一侧
-                        signalSend.setTarget(curLane.getInnerLane());
-                }
-            }
-            signalSend.setUrgency(1);
+        Lane curLane = vehicle.getCurLane();
+        if (curLane.getLength() - vehicle.getCurDis() < 30) {
+            return;
         }
+        double curEst = vehicle.getGap();
+        double outerEst = 0;
+        double innerEst;
+        double expectGap = 2 * vehicle.getLen() + 4 * interval * vehicle.getMaxSpeed();
+        if (curEst > expectGap || curEst < 1.5 * vehicle.getLen()) {
+            return;
+        }
+        Router router = vehicle.getCurRouter();
+        if (curLane.getLaneIndex() < curLane.getBeLongRoad().getLanes().size() - 1) {
+            if (router.onLastRoad() || router.getNextDrivable(curLane.getOuterLane()) != null) { // 已到 route 末尾或者外侧路满足通行要求
+                outerEst = estimateGap(curLane.getOuterLane());                          // 与外侧前车间距
+                if (outerEst > curEst + vehicle.getLen()) {                           // 外侧车距要求大于当前车距 + 车厂 （不应该再加个 safeGapBefore ?）
+                    signalSend.setTarget(curLane.getOuterLane());                         // signal 传向外侧
+                }
+            }
+        }
+
+        if (curLane.getLaneIndex() > 0) { // 当前不在最内侧，则测试内侧 lane 是否满足 laneChange 需求
+            if (router.onLastRoad() || router.getNextDrivable(curLane.getInnerLane()) != null) {
+                innerEst = estimateGap(curLane.getInnerLane());
+                if (innerEst > curEst + vehicle.getLen() && innerEst > outerEst) // 转向间距更大的一侧
+                    signalSend.setTarget(curLane.getInnerLane());
+            }
+        }
+        signalSend.setUrgency(1);
         super.makeSignal(interval);
     }
 

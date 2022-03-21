@@ -131,7 +131,7 @@ public abstract class LaneChange {
     }
 
     public boolean planChange() {
-        return (signalSend != null && signalSend.getTarget() != null && signalSend.getTarget() != vehicle.getCurDrivable()) || changing;
+        return changing || (signalSend != null && signalSend.getTarget() != null && signalSend.getTarget() != vehicle.getCurDrivable());
     }
 
     public boolean canChange() {
