@@ -4,19 +4,11 @@ public class Test {
     public static void main(String[] args) {
         Engine engine = new Engine("src/test/resources/test/config.json", 4);
 //        engine.loadFromFile("src/test/resources/test/2000step.json");
-//        for (int i = 0; i < 2000; i++) {
-//            engine.nextStep();
-//            System.out.println(i + " step");
-//            System.out.println(engine.getVehicleCount());
-//        }
-        int cnt = 1;
-        while (true) {
-            System.out.println(cnt + " step");
-            engine.nextStep();
-            cnt++;
-            System.out.println(engine.getVehicleCount());
-            if (engine.getVehicleCount() == 0) {
-                break;
+        int N = 10000;
+        for (int i = 0; i < N; i++) {
+            if (i % 50 == 0) {
+                System.out.println(i + " steps");
+                System.out.println(engine.getVehicleCount());
             }
         }
 //        System.out.println(engine.getFinishedVehicleCnt() + " " + engine.getAverageTravelTime());
