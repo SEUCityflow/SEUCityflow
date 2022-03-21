@@ -214,32 +214,42 @@ public class RoadNet {
         JSONArray intersectionValues = getJsonMemberArray(jsonObject, "intersections");
         JSONArray roadValues = getJsonMemberArray(jsonObject, "roads");
         buildMapping(intersectionValues, roadValues);
-        //roads
+        // roads
         for (int i = 0; i < roadValues.size(); i++) {
             JSONObject curRoadValue = roadValues.getJSONObject(i);
             Road road = roads.get(i);
             loadRoads(curRoadValue, road);
+            lanes.addAll(road.getLanes());
+            drivables.addAll(road.getLanes());
         }
         // intersections
         for (int i = 0; i < intersectionValues.size(); i++) {
             JSONObject curInterValue = intersectionValues.getJSONObject(i);
             Intersection intersection = intersections.get(i);
             loadIntersection(curInterValue, intersection);
-        }
-
-        for (Intersection intersection : intersections) {
-            intersection.initCrosses();
             laneLinks.addAll(intersection.getLaneLinks());
             drivables.addAll(intersection.getLaneLinks());
         }
-
-        VehicleInfo vehicleInfo = new VehicleInfo();
-
+        // calculate roads Info
+        VehicleInfo vehicleInfo = new VehicleInfo(); // TODO: can be updated
         for (Road road : roads) {
-            lanes.addAll(road.getLanes());
-            drivables.addAll(road.getLanes());
             road.initLanePoints();
             road.buildSegmentationByInterval((vehicleInfo.len + vehicleInfo.minGap) * 10);
+        }
+        // calculate intersections info
+        for (LaneLink laneLink : laneLinks) {
+            List<Point> laneLinkPoints = laneLink.getPoints();
+            if (laneLinkPoints == null) {
+                laneLinkPoints = calLaneLinkPoints(laneLink.getStartLane(), laneLink.getEndLane());
+            }
+            List<Point> startLanePoints = laneLink.getStartLane().getPoints();
+            List<Point> endLanePoints = laneLink.getEndLane().getPoints();
+            laneLinkPoints.add(0, startLanePoints.get(startLanePoints.size() - 1));
+            laneLinkPoints.add(endLanePoints.get(0));
+            laneLink.setLength(getLengthOfPoints(laneLinkPoints));
+        }
+        for (Intersection intersection : intersections) {
+            intersection.initCrosses();
         }
     }
 
