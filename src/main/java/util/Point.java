@@ -202,7 +202,7 @@ public class Point {
 
     public static boolean onSegment(Point A, Point B, Point C) {
         double v1 = crossMultiply(B.minus(A), C.minus(A));
-        double v2 = dotMultiply(C.minus(A), C.minus(A));
+        double v2 = dotMultiply(C.minus(A), C.minus(B));
         return Util.sign(v1) == 0 && Util.sign(v2) <= 0;
     }
 
