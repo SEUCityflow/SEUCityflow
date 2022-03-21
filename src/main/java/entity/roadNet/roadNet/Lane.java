@@ -20,6 +20,7 @@ public class Lane extends Drivable {
     private double sumPeriodTime;
     private static final int historyLen = 240;
     private static final int carToBeCalculate = 120;
+    private static final int periodSize = 6;
 
     public Lane() {
         super();
@@ -149,10 +150,10 @@ public class Lane extends Drivable {
                 }
             }
             segment.setVehicles(new LinkedList<>(vehicles.subList(start, end)));
-            if (segment.canGroup()) {
+            start = end;
+            if (!isCongestion() && segment.canGroup()) {
                 segment.buildGroup();
             }
-            start = end;
         }
     }
 
@@ -231,7 +232,7 @@ public class Lane extends Drivable {
         historyAverageSpeed = historyVehicleNum != 0 ? speedSum / historyVehicleNum : 0;
     }
 
-    public void addQueueingTime(double time) {
+    public void updateQueueingTime(double time) {
         while (queueingTimeList.size() >= carToBeCalculate) {
             sumQueueingTime -= queueingTimeList.get(0);
             queueingTimeList.remove(0);
@@ -240,8 +241,8 @@ public class Lane extends Drivable {
         sumQueueingTime += time;
     }
 
-    public void addPeriodTime(double time) {
-        while (periodTimeList.size() >= 6) {
+    public void updatePeriodTime(double time) {
+        while (periodTimeList.size() >= periodSize) {
             sumPeriodTime -= periodTimeList.get(0);
             periodTimeList.remove(0);
         }
@@ -267,6 +268,10 @@ public class Lane extends Drivable {
 
     public double getHistoryAverageSpeed() {
         return historyAverageSpeed;
+    }
+
+    public boolean isCongestion() {
+        return getQueueingTimeIndex() >= Road.congestionIndex;
     }
 
     public void setLaneIndex(int laneIndex) {
