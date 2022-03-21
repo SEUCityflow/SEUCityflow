@@ -123,9 +123,9 @@ public class Vehicle {
                 if (drivable.isLane()) {
                     Lane nowLane = (Lane) drivable;
                     if (startQueueingTime != -1) {
-                        nowLane.addQueueingTime(engine.getCurrentTime() - startQueueingTime);
+                        nowLane.updateQueueingTime(engine.getCurrentTime() - startQueueingTime);
                     } else {
-                        nowLane.addQueueingTime(0);
+                        nowLane.updateQueueingTime(0);
                     }
                     startQueueingTime = -1;
                 }
@@ -230,43 +230,47 @@ public class Vehicle {
         if (leader != null && leader.getCurDrivable() == getCurDrivable()) {  // 传入 leader 且和当前车在同一 lane
             controllerInfo.setLeader(leader);
             controllerInfo.setGap(leader.getCurDis() - leader.getLen() - controllerInfo.getDis());
-        } else {
-            controllerInfo.setLeader(null);
-            Drivable drivable;
-            Vehicle candidateLeader;
-            double candidateGap;
-            double dis = controllerInfo.getDrivable().getLength() - controllerInfo.getDis();  // 距 lane 首距离
-            int cnt = 0;
-            while (true) {  // 在未来将驶向的 drivable 内搜寻 leader
-                drivable = getNextDrivable(cnt++);
-                if (drivable == null) { // 已到 route 末尾，则无 leader
+            return;
+        }
+        controllerInfo.setLeader(null);
+        Drivable drivable;
+        Vehicle candidateLeader = null;
+        double candidateGap = 0;
+        double dis = controllerInfo.getDrivable().getLength() - controllerInfo.getDis();  // 距 lane 首距离
+        int cnt = 0;
+        while (true) {  // 在未来将驶向的 drivable 内搜寻 leader
+            drivable = getNextDrivable(cnt++);
+            if (drivable == null) { // 已到 route 末尾，则无 leader
+                return;
+            }
+            if (drivable.isLaneLink()) {  // if laneLink, check all laneLink start from previous lane, because lanelinks may overlap
+                for (LaneLink laneLink : ((LaneLink) drivable).getStartLane().getLaneLinks()) {
+                    Vehicle nowLeader = laneLink.getLastVehicle();
+                    if (nowLeader == null) {
+                        continue;
+                    }
+                    if (candidateLeader == null || candidateGap < dis + nowLeader.getCurDis() - nowLeader.getLen() ) {  // drivable 中的 lastVehicle 为 leader
+                        candidateLeader = nowLeader;
+                        candidateGap = dis + candidateLeader.getCurDis() - candidateLeader.getLen();
+                    }
+                }
+                if (candidateLeader != null) {
+                    controllerInfo.setLeader(candidateLeader);
+                    controllerInfo.setGap(candidateGap);
                     return;
                 }
-                if (drivable.isLaneLink()) {  // if laneLink, check all laneLink start from previous lane, because lanelinks may overlap
-                    for (LaneLink laneLink : ((LaneLink) drivable).getStartLane().getLaneLinks()) {
-                        if ((candidateLeader = laneLink.getLastVehicle()) != null) {  // drivable 中的 lastVehicle 为 leader
-                            candidateGap = dis + candidateLeader.getCurDis() - candidateLeader.getLen();
-                            if (controllerInfo.getLeader() == null || candidateGap < controllerInfo.getGap()) {
-                                controllerInfo.setLeader(candidateLeader);
-                                controllerInfo.setGap(candidateGap);
-                            }
-                        }
-                    }
-                    if (controllerInfo.getLeader() != null) {
-                        return;
-                    }
-                } else {
-                    if (drivable.getLastVehicle() != null) {
-                        controllerInfo.setLeader(drivable.getLastVehicle());
-                        controllerInfo.setGap(dis + controllerInfo.getLeader().getCurDis() - controllerInfo.getLeader().getLen());
-                    }
-                }
-                // 当前 drivable 中无车，再向前找
-                dis += drivable.getLength();
-                // 多次寻找后 dis 距离过大，停止寻找
-                if (dis > vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2) {
+            } else {
+                if (drivable.getLastVehicle() != null) {
+                    controllerInfo.setLeader(drivable.getLastVehicle());
+                    controllerInfo.setGap(dis + controllerInfo.getLeader().getCurDis() - controllerInfo.getLeader().getLen());
                     return;
                 }
+            }
+            // 当前 drivable 中无车，再向前找
+            dis += drivable.getLength();
+            // 多次寻找后 dis 距离过大，停止寻找
+            if (dis > vehicleInfo.maxSpeed * vehicleInfo.maxSpeed / vehicleInfo.usualNegAcc / 2 + vehicleInfo.maxSpeed * engine.getInterval() * 2) {
+                return;
             }
         }
     }
@@ -354,8 +358,8 @@ public class Vehicle {
     }
 
     // 未到 cross 且能在 yield 范围前停住或已过 cross 且不覆盖 cross
-    public boolean canYield(double dist) {
-        return (dist > 0 && getMinBrakeDistance() < dist - vehicleInfo.yieldDistance) || (dist < 0 && dist + vehicleInfo.len < 0);
+    public boolean canYield(double dist, double yieldDistance) {
+        return (dist > 0 && getMinBrakeDistance() < dist - yieldDistance) || (dist < 0 && dist + vehicleInfo.len < 0);
     }
 
     // 是否已在 intersection 或将进入 intersection
@@ -389,7 +393,7 @@ public class Vehicle {
             v = Math.min(v, getIntersectionRelatedSpeed(interval)); // 过 intersection 速度
         }
         v = Math.max(v, vehicleInfo.speed - vehicleInfo.maxNegAcc * interval); // 能减到的最小速度
-        if (v == 0 && startQueueingTime == -1) {
+        if (v <= 0 && startQueueingTime == -1) {
             startQueueingTime = engine.getCurrentTime();
         }
         return v;
@@ -426,7 +430,12 @@ public class Vehicle {
             if (distanceOnLaneLink < distanceToLaneLinkStart)        // 车头已过此 cross，说明先前已对当前 cross 进行了 canPass 判断，无需再考虑
                 continue;
             if (!cross.canPass(this, laneLink, distanceToLaneLinkStart)) { // 当前不可通过
-                v = Math.min(v, getStopBeforeSpeed(distanceOnLaneLink - distanceToLaneLinkStart - vehicleInfo.yieldDistance, interval)); // TODO: headway distance  能停下的话经过 interval 时间的速度
+                double dist = distanceOnLaneLink - distanceToLaneLinkStart - cross.getYieldDistance(this, laneLink);
+                if (dist < getMinBrakeDistance()) {
+                    v -= getMaxNegAcc() * interval;
+                } else {
+                    v = Math.min(v, getStopBeforeSpeed(dist, interval));
+                }
                 setBlocker(cross.getFoeVehicle(laneLink));      // 被 block
                 break;
             }
@@ -442,8 +451,7 @@ public class Vehicle {
     }
 
     public boolean isGrouped() {
-        Drivable drivable = getCurDrivable();
-        return drivable.isLane() && getSegment().isGrouped();
+        return getCurDrivable().isLane() && getSegment().isGrouped();
     }
 
     public Road getFirstRoad() {
@@ -455,9 +463,9 @@ public class Vehicle {
         controllerInfo.setDrivable(controllerInfo.getRouter().getFirstDrivable());
     }
 
-    // 用 updateShortestPath 更新 route
-    public void updateRoute() {
-        routeValid = controllerInfo.getRouter().updateShortestPath();
+    // 用 getShortestPath 更新 route
+    public void calculateRoute() {
+        routeValid = controllerInfo.getRouter().getShortestPath();
     }
 
     public boolean changeRoute(List<Road> anchor) {
