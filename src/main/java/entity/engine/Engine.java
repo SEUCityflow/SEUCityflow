@@ -232,7 +232,7 @@ public class Engine {
         return nextSpeed;
     }
 
-    private double calculateDistanced(Vehicle vehicle, double nextSpeed) {
+    private double calculateDistance(Vehicle vehicle, double nextSpeed) {
         double speed = vehicle.getSpeed();
         double deltaDis;
         if (nextSpeed == 0) {
@@ -270,17 +270,17 @@ public class Engine {
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {// 发生 drivable 变动且此时尚未到达 end
             Pair<Vehicle, Double> pair = new Pair<>(vehicle, vehicle.getBufferDis());
             buffer.add(pair);
-            if (vehicle.getBufferDrivable().isLane()) {
+            if (vehicle.getBufferDrivable().isLane() && vehicle.getCurRouter().getType() == RouterType.DYNAMIC) {
                 buffer2.add(vehicle);
             }
         }
     }
 
-    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer, List<Vehicle> buffer2) {
+    public void vehicleControl(Vehicle vehicle, List<Pair<Vehicle, Double>> buffer1, List<Vehicle> buffer2) {
         double nextSpeed = calculateSpeed(vehicle);
-        double deltaDis = calculateDistanced(vehicle, nextSpeed);
+        double deltaDis = calculateDistance(vehicle, nextSpeed);
         calculateOffset(vehicle, nextSpeed);
-        checkDrivableChange(vehicle, buffer, buffer2);
+        checkDrivableChange(vehicle, buffer1, buffer2);
         if (vehicle.isGrouped()) {
             if (nextSpeed > vehicle.getCurDrivable().getMaxSpeed() * Vehicle.Alpha) {
                 for (Vehicle vehicle1 : vehicle.getSegment().getVehicles()) {
@@ -288,9 +288,9 @@ public class Engine {
                         continue;
                     }
                     calculateSpeed(vehicle1);
-                    calculateDistanced(vehicle1, nextSpeed);
+                    calculateDistance(vehicle1, nextSpeed);
                     calculateOffset(vehicle1, nextSpeed);
-                    checkDrivableChange(vehicle1, buffer, buffer2);
+                    checkDrivableChange(vehicle1, buffer1, buffer2);
                 }
             } else {
                 for (Vehicle vehicle1 : vehicle.getSegment().getVehicles()) {
@@ -355,7 +355,7 @@ public class Engine {
         for (Vehicle vehicle : laneChangeNotifyBuffer) {
             vehicle.updateLaneChangeNeighbor();
             vehicle.sendSignal();
-            if (vehicle.planLaneChange() && vehicle.canChange() && !vehicle.isChanging()) {
+            if (!vehicle.isChanging() && vehicle.planLaneChange() && vehicle.canChange()) {
                 LaneChange laneChange = vehicle.getLaneChange();
                 if (laneChange.isGapValid() && vehicle.getCurDrivable().isLane()) {
                     insertShadow(vehicle);
@@ -398,7 +398,7 @@ public class Engine {
     private void updateLocation() {
         startBarrier.Wait();
         endBarrier.Wait();
-        pushBuffer.sort(Comparator.comparing(Pair::getValue));
+        pushBuffer.sort((o1, o2) -> o2.getValue().compareTo(o1.getValue()));
         for (Pair<Vehicle, Double> vehiclePair : pushBuffer) {
             Vehicle vehicle = vehiclePair.getKey();
             Drivable drivable = vehicle.getChangedDrivable();
@@ -474,18 +474,18 @@ public class Engine {
     }
 
     public void nextStep() {
-        for (Flow flow : flows) {
+        for (Flow flow : flows) { // O(n), n = flow.size()
             flow.nextStep(interval);
         }
-        planRoute();
-        handleWaiting();
+        planRoute(); // O(n), n = vehicle.size() in planRouteBuffer
+        handleWaiting(); // O(n), n = lane.size()
         initSegments();
         if (laneChange) {
-            planLaneChange();
+            planLaneChange(); // O(nlogn + m), n = vehicle.size() in laneChangeNotifyBuffer, m = drivable.size()
         }
         notifyCross();
         getAction();
-        updateLocation();
+        updateLocation(); // 0(nlogn), n = vehicle.size() in pushBuffer
         updateAction();
         updateLeaderAndGap();
         updateShorterRoute();
@@ -499,7 +499,7 @@ public class Engine {
         }
         if (saveReplay) {
             try {
-                updateLog();
+                updateLog(); // O(n), n = runningVehicle.size()
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -783,11 +783,6 @@ public class Engine {
     public double getAverageTravelTime() {
         double tt = cumulativeTravelTime;
         int n = finishedVehicleCnt;
-//        for (int key : vehiclePool.keySet()) {
-//            Vehicle vehicle = vehiclePool.get(key).getKey();
-//            tt += getCurrentTime() - vehicle.getEnterTime();
-//            n++;
-//        }
         return n == 0 ? 0 : tt / n;
     }
 
