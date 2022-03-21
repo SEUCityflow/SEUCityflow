@@ -14,7 +14,7 @@ public class Road {
     private List<Lane> lanes;
     private List<Point> points; // 起点为 startIntersection 中心，终点为 endIntersection 中心
     private List<Vehicle> planRouteBuffer;
-    private static final double congestionIndex = 1.5;
+    public static final double congestionIndex = 1.5;
 
     public void initLanePoints() {
         double dsum = 0;
