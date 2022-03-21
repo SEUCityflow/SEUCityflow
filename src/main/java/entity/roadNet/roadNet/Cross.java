@@ -37,18 +37,27 @@ public class Cross {
         double d1 = distanceOnLane[i] - distanceToLaneLinkStart;
         double d2 = distanceOnLane[1 - i];
 
-        // 无冲突车辆或当前车辆无法停下或冲突车辆已完全通过或冲突车辆死锁无法移动
-        if (foeVehicle == null || !vehicle.canYield(d1) || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) {
+        // 无 foe 或 foe 已完全通过或 foe 死锁无法移动
+        if (foeVehicle == null || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) {
             return true;
         }
+        double yieldDistanceD1 = getYieldDistance(vehicle, foeVehicle);
+        double yieldDistanceD2 = getYieldDistance(foeVehicle, vehicle);
+        boolean canYieldD1 = vehicle.canYield(d1, yieldDistanceD1);
+        boolean canYieldD2 = foeVehicle.canYield(d2, yieldDistanceD2);
         boolean canPass = false;
-        if (foeVehicle.canYield(d2)) { // 冲突车辆可停
+        if (canYieldD1 && !canYieldD2) {
+            return false;
+        } else if (!canYieldD1 && canYieldD2) {
+            return true;
+        } else {
             int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
             int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
             if (reachSteps < foeVehicleReachSteps) { // 自己早到
                 canPass = true;
             } else if (reachSteps > foeVehicleReachSteps) { // 自己晚到
                 canPass = t1.ordinal() > t2.ordinal(); // 交通规则优势
+                System.out.println("!!!!!!!!");
             } else { // 同时到
                 if (t1.ordinal() > t2.ordinal()) { // 交通规则优势
                     canPass = true;
@@ -66,6 +75,16 @@ public class Cross {
             }
         }
         return canPass;
+    }
+
+    public double getYieldDistance(Vehicle vehicle, Vehicle foeVehicle) {
+        return Math.min(vehicle.getYieldDistance(), (vehicle.getWidth() + foeVehicle.getWidth() * Math.cos(ang)) / 2 / Math.sin(ang));
+    }
+
+    public double getYieldDistance(Vehicle vehicle, LaneLink laneLink) {
+        int i = (laneLink == laneLinks[0]) ? 0 : 1;
+        Vehicle foeVehicle = notifyVehicles[1 - i];
+        return Math.min(vehicle.getYieldDistance(), (vehicle.getWidth() + foeVehicle.getWidth() * Math.cos(ang)) / 2 / Math.sin(ang));
     }
 
     public void clearNotify() {
@@ -121,10 +140,6 @@ public class Cross {
     public void setLeaveDistance(double leaveDistance) {
         this.leaveDistance = leaveDistance;
     }
-
-//    public void setArriveDistance(double arriveDistance) {
-//        this.arriveDistance = arriveDistance;
-//    }
 
     public void setAng(double ang) {
         this.ang = ang;
