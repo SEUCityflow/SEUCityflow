@@ -17,7 +17,8 @@ class ThreadControl implements Runnable {
     private final List<Road> roads;
     private final List<Intersection> intersections;
     private final List<Drivable> drivables;
-    private final List<Vehicle> vehiclesEnterLane;
+    private final List<Vehicle> dynamicVehiclesEnterLane;
+    private final List<LaneLink> activateLaneLinks;
 
     public ThreadControl(Engine engine, Barrier startBarrier, Barrier endBarrier, Set<Vehicle> vehicles, List<Road> roads, List<Intersection> intersections, List<Drivable> drivables) {
         this.engine = engine;
@@ -27,14 +28,15 @@ class ThreadControl implements Runnable {
         this.roads = roads;
         this.drivables = drivables;
         this.intersections = intersections;
-        vehiclesEnterLane = new ArrayList<>();
+        dynamicVehiclesEnterLane = new ArrayList<>();
+        activateLaneLinks = new ArrayList<>();
     }
 
     private void threadPlanRoute() {
         startBarrier.Wait();
         for (Road road : roads) {
             for (Vehicle vehicle : road.getPlanRouteBuffer()) {
-                vehicle.updateRoute();
+                vehicle.calculateRoute();
             }
         }
         endBarrier.Wait();
@@ -55,15 +57,9 @@ class ThreadControl implements Runnable {
         List<Vehicle> buffer = new ArrayList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning() && vehicle.isReal()) {
-                if (vehicle.isGrouped()) {
-                    if (vehicle.isChanging()) {
-                        buffer.add(vehicle);
-                    }
-                } else {
-                    vehicle.makeLaneChangeSignal(engine.getInterval());
-                    if (vehicle.planLaneChange()) {
-                        buffer.add(vehicle);
-                    }
+                vehicle.makeLaneChangeSignal(engine.getInterval());
+                if (vehicle.planLaneChange()) {
+                    buffer.add(vehicle);
                 }
             }
         }
@@ -91,24 +87,30 @@ class ThreadControl implements Runnable {
 
     private void threadNotifyCross() {
         startBarrier.Wait();
-        for (Intersection intersection : intersections) {
-            for (Cross cross : intersection.getCrosses())
+        for (LaneLink laneLink : activateLaneLinks) {
+            for (Cross cross : laneLink.getCrosses()) {
                 cross.clearNotify();
+            }
         }
+        activateLaneLinks.clear();
         for (Intersection intersection : intersections) {
             for (LaneLink laneLink : intersection.getLaneLinks()) {
+                if (laneLink.getVehicles().size() == 0 && !laneLink.isAvailable()) {
+                    continue;
+                }
+                activateLaneLinks.add(laneLink);
                 List<Cross> crosses = laneLink.getCrosses();
-                ListIterator<Cross> crossIterator = crosses.listIterator();
+                ListIterator<Cross> crossIterator = crosses.listIterator(crosses.size());
                 // first check the vehicle on the end lane
                 Vehicle vehicle = laneLink.getEndLane().getLastVehicle();
                 if (vehicle != null && vehicle.getPrevDrivable() == laneLink) {
-                    double vehDistance = vehicle.getCurDis() - vehicle.getLen();//problem vehicle 距离此 endLane 起点的距离 C++ 里为 getDistance()函数名未找到
+                    double vehDistance = vehicle.getCurDis() - vehicle.getLen();
                     while (crossIterator.hasPrevious()) {
                         Cross cross_now = crossIterator.previous();
                         double crossDistance = laneLink.getLength() - cross_now.getDistanceByLane(laneLink);
                         // cross 距 laneLink 终点
-                        if (crossDistance + vehDistance < cross_now.getLeaveDistance()) {                     //problem  vehicle 距 cross 的距离小于 leaveDistance
-                            cross_now.notify(laneLink, vehicle, -(vehicle.getCurDis() + crossDistance));   //problem  信息填入此 cross
+                        if (crossDistance + vehDistance < cross_now.getLeaveDistance()) {
+                            cross_now.notify(laneLink, vehicle, -(vehicle.getCurDis() + crossDistance));
                         } else {
                             break;
                         }
@@ -121,7 +123,7 @@ class ThreadControl implements Runnable {
                         Cross cross_now = crossIterator.previous();
                         double crossDistance = cross_now.getDistanceByLane(laneLink);
                         if (vehDistance > crossDistance) { // vehicle 已过 cross
-                            if (vehDistance - crossDistance - linkVehicle.getLen() <= cross_now.getLeaveDistance()) {//problem
+                            if (vehDistance - crossDistance - linkVehicle.getLen() <= cross_now.getLeaveDistance()) {
                                 cross_now.notify(laneLink, linkVehicle, crossDistance - vehDistance);
                             } else {
                                 break;
@@ -132,6 +134,9 @@ class ThreadControl implements Runnable {
                     }
                 }
                 // check vehicle on the incoming lane（laneLink 上车已经检查完成但仍有 cross 未 notify）
+                if (!laneLink.isAvailable()) {
+                    continue;
+                }
                 vehicle = laneLink.getStartLane().getFirstVehicle();
                 if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
                     double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
@@ -149,7 +154,7 @@ class ThreadControl implements Runnable {
         List<Pair<Vehicle, Double>> buffer = new LinkedList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning() && vehicle.getGroupLeader() == null) {
-                engine.vehicleControl(vehicle, buffer, vehiclesEnterLane); //计算 speed、dis等信息
+                engine.vehicleControl(vehicle, buffer, dynamicVehiclesEnterLane); //计算 speed、dis等信息
             }
         }
         synchronized (engine) {
@@ -202,10 +207,7 @@ class ThreadControl implements Runnable {
 
     private void threadUpdateShorterRoute() {
         startBarrier.Wait();
-        for (Vehicle vehicle : vehiclesEnterLane) {
-            if (vehicle.getCurRouter().getType() != RouterType.DYNAMIC) {
-                continue;
-            }
+        for (Vehicle vehicle : dynamicVehiclesEnterLane) {
             Router router = vehicle.getCurRouter();
             List<Pair<Road, Integer>> route = router.getRoute();
             List<Road> anchorPoints = router.getAnchorPoints();
@@ -230,23 +232,23 @@ class ThreadControl implements Runnable {
             }
             router.setiCurRoad(route.listIterator());
         }
-        vehiclesEnterLane.clear();
+        dynamicVehiclesEnterLane.clear();
         endBarrier.Wait();
     }
 
     public void run() {
         while (!engine.getFinished()) {
-            threadPlanRoute();
-            threadInitSegments();
+            threadPlanRoute(); // O(n * ElogV), n = vehicle.size() in planRouteBuffer
+            threadInitSegments(); // O(n), n = vehicles.size()
             if (engine.isLaneChange()) {
-                threadPlanLaneChange();
+                threadPlanLaneChange(); // O(n), n = vehicles.size()
             }
-            threadNotifyCross();
-            threadGetAction();
-            threadUpdateLocation();
-            threadUpdateAction();
-            threadUpdateLeaderAndGap();
-            threadUpdateShorterRoute();
+            threadNotifyCross(); // O(n), n = vehicles.size();
+            threadGetAction(); // O(n), n = vehicles.size();
+            threadUpdateLocation(); // O(n), n = vehicles.size();
+            threadUpdateAction(); // O(n), n = vehicles.size();
+            threadUpdateLeaderAndGap(); // O(n), n = vehicles.size();
+            threadUpdateShorterRoute(); // O(n), n = vehiclesNeedToBeUpdate.size()
         }
     }
 
