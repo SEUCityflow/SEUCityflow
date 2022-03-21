@@ -66,7 +66,7 @@ public class TrafficLight {
                     set.add(laneLink.getStartLane());
                 }
                 for (Lane lane : set) {
-                    lane.addPeriodTime(cumulateTimes.get(i));
+                    lane.updatePeriodTime(cumulateTimes.get(i));
                 }
                 cumulateTimes.set(i, (double) 0);
             } else {
