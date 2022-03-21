@@ -3,10 +3,10 @@
   "seed": 47,
   "dir": "src/test/resources/manhattan/",
   "roadnetFile": "manhattan.json",
-  "flowFile": "manhattan_7846.json",
+  "flowFile": "manhattan_31217.json",
   "rlTrafficLight": false,
   "laneChange": true,
-  "saveReplay": false,
+  "saveReplay": true,
   "roadnetLogFile": "replay_manhattan.json",
   "replayLogFile": "replay_manhattan_31217_LaneChange.txt"
 }
