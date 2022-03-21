@@ -52,7 +52,8 @@ public class Segment {
     }
 
     public boolean canGroup() {
-        return index != belongLane.getSegmentNum() - 1 && getAverageSpeed() != -1 && getAverageSpeed() <= belongLane.getMaxSpeed() * Vehicle.Alpha;
+        double averageSpeed = getAverageSpeed();
+        return index != belongLane.getSegmentNum() - 1 && averageSpeed != -1 && averageSpeed <= belongLane.getMaxSpeed() * Vehicle.Alpha;
     }
 
     public double getStartPos() {
