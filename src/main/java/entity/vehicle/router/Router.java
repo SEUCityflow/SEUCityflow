@@ -251,7 +251,6 @@ public class Router {
         Drivable curDrivable = vehicle.getCurDrivable();
         if (curDrivable.isLane()) {
             while (iCurRoad.hasNext() && ((Lane) curDrivable).getBeLongRoad() != iCurRoad.next().getKey()) {
-
             }
             iCurRoad.previous();
             assert (iCurRoad.hasNext());
@@ -299,7 +298,7 @@ public class Router {
     }
 
     // 更新 route 为经过 anchorpoint 各路的最短路
-    public boolean updateShortestPath() {
+    public boolean getShortestPath() {
         route = new ArrayList<>();
         route.add(new Pair<>(anchorPoints.get(0), 0));
         nowAnchorPoint = new Pair<>(anchorPoints.get(0), 0);
@@ -326,7 +325,7 @@ public class Router {
         anchorPoints.clear();
         anchorPoints.add(curRoad.getKey());
         anchorPoints.addAll(anchor);
-        boolean result = updateShortestPath();
+        boolean result = getShortestPath();
         if (result && onValidLane()) {
             iCurRoad = route.listIterator();
             return true;
