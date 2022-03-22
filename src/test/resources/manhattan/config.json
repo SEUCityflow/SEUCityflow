@@ -7,6 +7,7 @@
   "rlTrafficLight": false,
   "laneChange": true,
   "saveReplay": true,
+  "routeType": "DYNAMIC",
   "roadnetLogFile": "replay_manhattan.json",
   "replayLogFile": "replay_manhattan_31217_LaneChange.txt"
 }
