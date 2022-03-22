@@ -1,5 +1,12 @@
 # SEUCityflow
 
+**JAVA**:
+1.配置 java 环境
+2.git push XXXX
+3.导入 IDEA 后运行 src/test/java/Test.java
+
+**PYTHON**:
+
 1.pip install jpype1
 
 2.安装 java（版本应大于 1.8.0_201） 并配置 JAVA_HOME 环境变量
@@ -39,12 +46,12 @@ engine = Engine("/your/path/to/configFile.json", threadNumber)
 **注：**
 对所有返回值类型为 list 或 dict 的方法，需使用 json.loads() 进行类型转化，如：
 ```
-vehicleNameList = json.loads(get_vehicles(include_waiting=False))
+vehicleNameList = json.loads(engine.get_vehicles(include_waiting=False))
 ```
 **注：**
 对返回值类型为 double 的方法，需用 float() 进行类型转化，如：
 ```
-time = float(get_current_time())
+time = float(engine.get_current_time())
 ```
 
 
