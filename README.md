@@ -1,8 +1,11 @@
 # SEUCityflow
 
 **JAVA**:
+
 1.配置 java 环境
+
 2.git push XXXX
+
 3.导入 IDEA 后运行 src/test/java/Test.java
 
 **PYTHON**:
