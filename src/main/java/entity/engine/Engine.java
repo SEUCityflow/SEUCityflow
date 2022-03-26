@@ -465,7 +465,7 @@ public class Engine {
 
     private void insertShadow(Vehicle vehicle) {
         int threadIndex = vehiclePool.get(vehicle.getPriority()).getValue();
-        Vehicle shadow = new Vehicle(vehicle, vehicle.getId() + "_shadow", this, null);
+        Vehicle shadow = new Vehicle(vehicle, vehicle.getId() + "_shadow", this, vehicle.getFlow());
         vehicleMap.put(shadow.getId(), shadow);
         vehiclePool.put(shadow.getPriority(), new Pair<>(shadow, threadIndex));
         threadVehiclePool.get(threadIndex).add(shadow);

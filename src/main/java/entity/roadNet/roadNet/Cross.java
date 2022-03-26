@@ -57,7 +57,6 @@ public class Cross {
                 canPass = true;
             } else if (reachSteps > foeVehicleReachSteps) { // 自己晚到
                 canPass = t1.ordinal() > t2.ordinal(); // 交通规则优势
-                System.out.println("!!!!!!!!");
             } else { // 同时到
                 if (t1.ordinal() > t2.ordinal()) { // 交通规则优势
                     canPass = true;

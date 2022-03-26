@@ -159,6 +159,10 @@ public class Router {
                 }
             }
         }
+        if (!success) {
+            System.err.println("Can't go from " + start.getId() + " to " + end.getId() + " in " + vehicle.getFlow().getId());
+            return false;
+        }
         List<Pair<Road, Integer>> path = new ArrayList<>();
         path.add(new Pair<>(end, num));
         Road p = from.get(end);
@@ -168,7 +172,7 @@ public class Router {
         }
         Collections.reverse(path);
         buffer.addAll(path);
-        return success;
+        return true;
     }
 
     public Road getFirstRoad() {

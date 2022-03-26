@@ -221,13 +221,22 @@ class ThreadControl implements Runnable {
                 if (!roadToBeCheck.isAnchorPoint(anchorPoints.get(pos)) && roadToBeCheck.isCongestion()) {
                     Pair<Road, Integer> start = route.get(1);
                     route.subList(2, route.size()).clear();
-                    router.dijkstra(start.getKey(), anchorPoints.get(pos), route, pos);
+                    if (!router.dijkstra(start.getKey(), anchorPoints.get(pos), route, pos)) {
+                        vehicle.getFlow().setValid(false);
+                        System.err.println("Invalid route '" + vehicle.getFlow().getId() + ", the car will end earlier than schedule.");
+                        System.err.println();
+                    }
+                    router.getPlanned().clear();
                     router.setNowAnchorPoint(new Pair<>(anchorPoints.get(pos), pos));
                 }
             }
             while (router.routeTooShort() && !router.isEnd()) {
                 Pair<Road, Integer> start = router.getNowAnchorPoint();
-                router.dijkstra(start.getKey(), router.getAnchorPoints().get(start.getValue() + 1), route, start.getValue() + 1);
+                if (!router.dijkstra(start.getKey(), router.getAnchorPoints().get(start.getValue() + 1), route, start.getValue() + 1)) {
+                    vehicle.getFlow().setValid(false);
+                    System.err.println("Invalid route '" + vehicle.getFlow().getId() + ", the car will end earlier than schedule.");
+                }
+                router.getPlanned().clear();
                 router.setNowAnchorPoint(new Pair<>(router.getAnchorPoints().get(start.getValue() + 1), start.getValue() + 1));
             }
             router.setiCurRoad(route.listIterator());
