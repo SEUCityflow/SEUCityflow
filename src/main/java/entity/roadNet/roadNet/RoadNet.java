@@ -8,6 +8,7 @@ import entity.roadNet.trafficLight.TrafficLight;
 
 import static util.Point.*;
 
+import java.io.IOException;
 import java.util.*;
 
 import entity.vehicle.vehicle.VehicleInfo;
@@ -208,7 +209,7 @@ public class RoadNet {
     }
 
     // TODO: 配置 fastJSON 序列化格式
-    public void loadFromJson(String jsonFileName) {
+    public void loadFromJson(String jsonFileName) throws IOException {
         String json = readJsonData(jsonFileName);
         JSONObject jsonObject = JSONObject.parseObject(json);
         JSONArray intersectionValues = getJsonMemberArray(jsonObject, "intersections");

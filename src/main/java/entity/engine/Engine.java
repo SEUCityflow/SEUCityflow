@@ -19,6 +19,7 @@ import util.Point;
 
 import static util.Point.*;
 
+import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,7 +80,7 @@ public class Engine {
     }
 
     // load
-    private boolean loadRoadNet(String jsonFile) {
+    private boolean loadRoadNet(String jsonFile) throws IOException {
         roadNet.loadFromJson(jsonFile);
         int cnt = 0;
         for (Road road : roadNet.getRoads()) {
@@ -97,7 +98,7 @@ public class Engine {
         return true;
     }
 
-    private boolean loadFlow(String jsonFileName) {
+    private boolean loadFlow(String jsonFileName) throws IOException {
         String json = readJsonData(jsonFileName);
         JSONArray flowValues = JSONObject.parseArray(json);
         for (int i = 0; i < flowValues.size(); i++) {
@@ -138,12 +139,11 @@ public class Engine {
         return true;
     }
 
-    private boolean loadConfig(String configFile) {
+    private boolean loadConfig(String configFile) throws IOException {
         String json = readJsonData(configFile);
         JSONObject configValues = JSONObject.parseObject(json);
-        try {
             interval = getDoubleFromJsonObject(configValues, "interval");
-            warnings = false;
+            warnings = true;
             rlTrafficLight = getBooleanFromJsonObject(configValues, "rlTrafficLight");
             laneChange = getBooleanFromJsonObject(configValues, "laneChange");
             seed = getIntFromJsonObject(configValues, "seed");
@@ -175,9 +175,6 @@ public class Engine {
                 String replayLogFile = getStringFromJsonObject(configValues, "replayLogFile");
                 setLogFile(dir + roadNetLogFile, dir + replayLogFile);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return true;
     }
 
@@ -186,24 +183,18 @@ public class Engine {
         logOut = new BufferedWriter(new FileWriter(logFile));
     }
 
-    private boolean checkWarning() {
-        boolean result = true;
+    private void checkWarning() {
         if (interval < 0.2 || interval > 1.5) {
             System.err.println("Deprecated time interval, recommended interval between 0.2 and 1.5");
-            result = false;
         }
-
         for (Lane lane : roadNet.getLanes()) {
             if (lane.getLength() < 50) {
                 System.err.println("Deprecated road length, recommended road length at least 50 meters");
-                result = false;
             }
             if (lane.getMaxSpeed() > 30) {
                 System.err.println("Deprecated road max speed, recommended max speed at most 30 meters/s");
-                result = false;
             }
         }
-        return result;
     }
 
     // nextStep
@@ -523,7 +514,7 @@ public class Engine {
     }
 
     // 构造
-    public Engine(String configFile, int threadNum) {
+    public Engine(String configFile, int threadNum) throws IOException {
         vehiclePool = new HashMap<>();
         vehicleMap = new HashMap<>();
         flowMap = new HashMap<>();
@@ -622,20 +613,20 @@ public class Engine {
         return new Archive(this);
     }
 
-    public void loadFromFile(String fileName) {
+    public void loadFromFile(String fileName) throws FileNotFoundException {
         Archive archive = Archive.load(this, fileName);
         archive.resume(this);
     }
 
-    public Archive loadArchiveFromFile(String fileName) {
+    public Archive loadArchiveFromFile(String fileName) throws FileNotFoundException {
         return Archive.load(this, fileName);
     }
 
-    public void saveArchiveToFile(Archive archive, String fileName) {
+    public void saveArchiveToFile(Archive archive, String fileName) throws IOException {
         archive.dump(fileName);
     }
 
-    public void saveToFile(String fileName) {
+    public void saveToFile(String fileName) throws IOException {
         Archive archive = snapshot();
         archive.dump(fileName);
     }

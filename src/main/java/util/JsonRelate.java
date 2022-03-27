@@ -7,24 +7,18 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 public class JsonRelate {
-    public static boolean writeJsonToFile(String filename, String json) {
-        try {
-            BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filename));
-            bufferedWriter.write(json);
-            bufferedWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return true;
+    public static void writeJsonToFile(String filename, String json) throws IOException {
+        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filename));
+        bufferedWriter.write(json);
+        bufferedWriter.close();
     }
 
-    public static String readJsonData(String pactFile) {
+    public static String readJsonData(String pactFile) throws IOException {
         StringBuilder strBuffer = new StringBuilder();
         File myFile = new File(pactFile);
         if (!myFile.exists()) {
             System.err.println("Can't Find " + pactFile);
         }
-        try {
             FileInputStream fis = new FileInputStream(pactFile);
             InputStreamReader inputStreamReader = new InputStreamReader(fis, StandardCharsets.UTF_8);
             BufferedReader in = new BufferedReader(inputStreamReader);
@@ -34,9 +28,6 @@ public class JsonRelate {
                 strBuffer.append(str);
             }
             in.close();
-        } catch (IOException e) {
-            e.getStackTrace();
-        }
         return strBuffer.toString();
     }
 

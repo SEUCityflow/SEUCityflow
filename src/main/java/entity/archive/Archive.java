@@ -20,6 +20,7 @@ import entity.vehicle.vehicle.Vehicle;
 import entity.vehicle.vehicle.VehicleInfo;
 import util.Pair;
 
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -447,110 +448,102 @@ public class Archive {
     }
 
     // archive -> file
-    public void dump(String fileName) {
-        try {
-            JSONWriter writer = new JSONWriter(new FileWriter(fileName));
-            writer.startObject();
-            // write trafficLight
-            writer.writeKey("trafficLightArchives");
-            writer.startArray();
-            for (TrafficLightArchive trafficLightArchive : trafficLightArchives) {
-                writer.writeValue(trafficLightArchive);
-            }
-            writer.endArray();
-            // write flow
-            writer.writeKey("flowArchives");
-            writer.startArray();
-            for (FlowArchive flowArchive : flowArchives) {
-                writer.writeValue(flowArchive);
-            }
-            writer.endArray();
-            // write drivable
-            writer.writeKey("drivableArchives");
-            writer.startArray();
-            for (DrivableArchive drivableArchive : drivableArchives) {
-                writer.writeValue(drivableArchive);
-            }
-            writer.endArray();
-            // write vehicle
-            writer.writeKey("vehicleArchives");
-            writer.startArray();
-            for (VehicleArchive vehicleArchive : vehicleArchives) {
-                writer.writeValue(vehicleArchive);
-            }
-            writer.endArray();
-            // write engine
-            writer.writeKey("step");
-            writer.writeValue(step);
-            writer.writeKey("activeVehicleCount");
-            writer.writeValue(activeVehicleCount);
-            writer.writeKey("rnd");
-            writer.writeValue(rnd);
-            writer.writeKey("finishedVehicleCnt");
-            writer.writeValue(finishedVehicleCnt);
-            writer.writeKey("cumulativeTravelTime");
-            writer.writeValue(cumulativeTravelTime);
-            writer.writeKey("routeType");
-            writer.writeValue(routeType);
-            writer.endObject();
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void dump(String fileName) throws IOException {
+        JSONWriter writer = new JSONWriter(new FileWriter(fileName));
+        writer.startObject();
+        // write trafficLight
+        writer.writeKey("trafficLightArchives");
+        writer.startArray();
+        for (TrafficLightArchive trafficLightArchive : trafficLightArchives) {
+            writer.writeValue(trafficLightArchive);
         }
+        writer.endArray();
+        // write flow
+        writer.writeKey("flowArchives");
+        writer.startArray();
+        for (FlowArchive flowArchive : flowArchives) {
+            writer.writeValue(flowArchive);
+        }
+        writer.endArray();
+        // write drivable
+        writer.writeKey("drivableArchives");
+        writer.startArray();
+        for (DrivableArchive drivableArchive : drivableArchives) {
+            writer.writeValue(drivableArchive);
+        }
+        writer.endArray();
+        // write vehicle
+        writer.writeKey("vehicleArchives");
+        writer.startArray();
+        for (VehicleArchive vehicleArchive : vehicleArchives) {
+            writer.writeValue(vehicleArchive);
+        }
+        writer.endArray();
+        // write engine
+        writer.writeKey("step");
+        writer.writeValue(step);
+        writer.writeKey("activeVehicleCount");
+        writer.writeValue(activeVehicleCount);
+        writer.writeKey("rnd");
+        writer.writeValue(rnd);
+        writer.writeKey("finishedVehicleCnt");
+        writer.writeValue(finishedVehicleCnt);
+        writer.writeKey("cumulativeTravelTime");
+        writer.writeValue(cumulativeTravelTime);
+        writer.writeKey("routeType");
+        writer.writeValue(routeType);
+        writer.endObject();
+        writer.close();
     }
 
     // file -> archive
-    public static Archive load(Engine engine, String fileName) {
+    public static Archive load(Engine engine, String fileName) throws FileNotFoundException {
         Archive archive = new Archive();
-        try {
-            JSONReader reader = new JSONReader(new FileReader(fileName));
-            reader.startObject();
-            // read traffic
-            reader.readString();
-            reader.startArray();
-            while (reader.hasNext()) {
-                archive.getTrafficLightArchives().add(reader.readObject(TrafficLightArchive.class));
-            }
-            reader.endArray();
-            // read flow
-            reader.readString();
-            reader.startArray();
-            while (reader.hasNext()) {
-                archive.getFlowArchives().add(reader.readObject(FlowArchive.class));
-            }
-            reader.endArray();
-            // read drivable
-            reader.readString();
-            reader.startArray();
-            while (reader.hasNext()) {
-                archive.getDrivableArchives().add(reader.readObject(DrivableArchive.class));
-            }
-            reader.endArray();
-            // read vehicle
-            reader.readString();
-            reader.startArray();
-            while (reader.hasNext()) {
-                archive.getVehicleArchives().add(reader.readObject(VehicleArchive.class));
-            }
-            reader.endArray();
-            // read engine
-            reader.readString();
-            archive.setStep(reader.readInteger());
-            reader.readString();
-            archive.setActiveVehicleCount(reader.readInteger());
-            reader.readString();
-            archive.setRnd(reader.readObject(Random.class));
-            reader.readString();
-            archive.setFinishedVehicleCnt(reader.readInteger());
-            reader.readString();
-            archive.setCumulativeTravelTime(reader.readInteger());
-            reader.readString();
-            archive.setRouteType(reader.readString());
-            reader.endObject();
-            reader.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        JSONReader reader = new JSONReader(new FileReader(fileName));
+        reader.startObject();
+        // read traffic
+        reader.readString();
+        reader.startArray();
+        while (reader.hasNext()) {
+            archive.getTrafficLightArchives().add(reader.readObject(TrafficLightArchive.class));
         }
+        reader.endArray();
+        // read flow
+        reader.readString();
+        reader.startArray();
+        while (reader.hasNext()) {
+            archive.getFlowArchives().add(reader.readObject(FlowArchive.class));
+        }
+        reader.endArray();
+        // read drivable
+        reader.readString();
+        reader.startArray();
+        while (reader.hasNext()) {
+            archive.getDrivableArchives().add(reader.readObject(DrivableArchive.class));
+        }
+        reader.endArray();
+        // read vehicle
+        reader.readString();
+        reader.startArray();
+        while (reader.hasNext()) {
+            archive.getVehicleArchives().add(reader.readObject(VehicleArchive.class));
+        }
+        reader.endArray();
+        // read engine
+        reader.readString();
+        archive.setStep(reader.readInteger());
+        reader.readString();
+        archive.setActiveVehicleCount(reader.readInteger());
+        reader.readString();
+        archive.setRnd(reader.readObject(Random.class));
+        reader.readString();
+        archive.setFinishedVehicleCnt(reader.readInteger());
+        reader.readString();
+        archive.setCumulativeTravelTime(reader.readInteger());
+        reader.readString();
+        archive.setRouteType(reader.readString());
+        reader.endObject();
+        reader.close();
         archive.buildVehiclePool(engine);
         return archive;
     }

@@ -2,13 +2,14 @@ import com.alibaba.fastjson.JSON;
 import entity.archive.Archive;
 import entity.engine.Engine;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
 public class engine { // 供 python 调用
     private final Engine eng;
 
-    public engine(String configFile, int threadNum) {
+    public engine(String configFile, int threadNum) throws IOException {
         eng = new Engine(configFile, threadNum);
     }
 
@@ -52,12 +53,12 @@ public class engine { // 供 python 调用
         return eng.getLeader(vehicleId);
     }
 
-    public double get_current_time() {
-        return eng.getCurrentTime();
+    public float get_current_time() {
+        return (float) eng.getCurrentTime();
     }
 
-    public double getAverageTravelTime() {
-        return eng.getAverageTravelTime();
+    public float getAverageTravelTime() {
+        return (float) eng.getAverageTravelTime();
     }
 
     public void set_tl_phase(String id, int phaseIndex) {
@@ -100,7 +101,7 @@ public class engine { // 供 python 调用
         return eng.snapshot();
     }
 
-    public void loadFromFile(String fileName) {
+    public void loadFromFile(String fileName) throws FileNotFoundException {
         eng.loadFromFile(fileName);
     }
 
