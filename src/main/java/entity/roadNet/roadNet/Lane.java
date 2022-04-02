@@ -151,7 +151,7 @@ public class Lane extends Drivable {
             }
             segment.setVehicles(new LinkedList<>(vehicles.subList(start, end)));
             start = end;
-            if (!isCongestion() && segment.canGroup()) {
+            if (isCongestion() && segment.canGroup()) {
                 segment.buildGroup();
             }
         }
