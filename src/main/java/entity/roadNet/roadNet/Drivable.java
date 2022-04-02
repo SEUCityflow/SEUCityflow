@@ -16,7 +16,7 @@ public abstract class Drivable {
     protected double length;
     protected double width;
     protected double maxSpeed;
-    protected LinkedList<Vehicle> vehicles;
+    protected List<Vehicle> vehicles;
     protected List<Point> points; // 坐标
     protected DrivableType drivableType; // lane / laneLink
 
@@ -27,7 +27,7 @@ public abstract class Drivable {
         points = new ArrayList<>();
     }
 
-    public LinkedList<Vehicle> getVehicles() {
+    public List<Vehicle> getVehicles() {
         return vehicles;
     }
 
@@ -61,20 +61,20 @@ public abstract class Drivable {
 
     public Vehicle getFirstVehicle() {
         if (!vehicles.isEmpty()) {
-            return vehicles.getFirst();
+            return vehicles.get(0);
         }
         return null;
     }
 
     public Vehicle getLastVehicle() {
         if (!vehicles.isEmpty()) {
-            return vehicles.getLast();
+            return vehicles.get(vehicles.size() - 1);
         }
         return null;
     }
 
     public void pushVehicle(Vehicle vehicle) {
-        vehicles.addLast(vehicle);
+        vehicles.add(vehicle);
     }
 
     public void popVehicle() {
@@ -93,7 +93,7 @@ public abstract class Drivable {
         this.maxSpeed = maxSpeed;
     }
 
-    public void setVehicles(LinkedList<Vehicle> vehicles) {
+    public void setVehicles(List<Vehicle> vehicles) {
         this.vehicles = vehicles;
     }
 
