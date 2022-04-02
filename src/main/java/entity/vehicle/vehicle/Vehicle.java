@@ -244,7 +244,7 @@ public class Vehicle {
                     if (nowLeader == null) {
                         continue;
                     }
-                    if (candidateLeader == null || candidateGap < dis + nowLeader.getCurDis() - nowLeader.getLen() ) {  // drivable 中的 lastVehicle 为 leader
+                    if (candidateLeader == null || candidateGap > dis + nowLeader.getCurDis() - nowLeader.getLen() ) {  // drivable 中的 lastVehicle 为 leader
                         candidateLeader = nowLeader;
                         candidateGap = dis + candidateLeader.getCurDis() - candidateLeader.getLen();
                     }
