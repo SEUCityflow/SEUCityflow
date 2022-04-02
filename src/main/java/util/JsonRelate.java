@@ -19,15 +19,15 @@ public class JsonRelate {
         if (!myFile.exists()) {
             System.err.println("Can't Find " + pactFile);
         }
-            FileInputStream fis = new FileInputStream(pactFile);
-            InputStreamReader inputStreamReader = new InputStreamReader(fis, StandardCharsets.UTF_8);
-            BufferedReader in = new BufferedReader(inputStreamReader);
+        FileInputStream fis = new FileInputStream(pactFile);
+        InputStreamReader inputStreamReader = new InputStreamReader(fis, StandardCharsets.UTF_8);
+        BufferedReader in = new BufferedReader(inputStreamReader);
 
-            String str;
-            while ((str = in.readLine()) != null) {
-                strBuffer.append(str);
-            }
-            in.close();
+        String str;
+        while ((str = in.readLine()) != null) {
+            strBuffer.append(str);
+        }
+        in.close();
         return strBuffer.toString();
     }
 
