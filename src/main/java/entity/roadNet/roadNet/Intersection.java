@@ -6,7 +6,6 @@ import static util.Point.*;
 import util.Util;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class Intersection {
@@ -34,9 +33,9 @@ public class Intersection {
         double disa = 0;
         for (int i = 0; i + 1 < p1.size(); i++) {
             double disb = 0;
+            Point A1 = p1.get(i);
+            Point A2 = p1.get(i + 1);
             for (int j = 0; j + 1 < p2.size(); j++) {
-                Point A1 = p1.get(i);
-                Point A2 = p1.get(i + 1);
                 Point B1 = p2.get(j);
                 Point B2 = p2.get(j + 1);
                 if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) { // 平行
@@ -56,7 +55,9 @@ public class Intersection {
                     cross.setSafeDistances(Math.sqrt(diag - w2 * w2 / 4), Math.sqrt(diag - w1 * w1 / 4));
                     return cross;
                 }
+                disb += B2.minus(B1).len();
             }
+            disa += A2.minus(A1).len();
         }
         return null;
     }
@@ -83,7 +84,11 @@ public class Intersection {
         }
         for (LaneLink laneLink : allLaneLink) {
             List<Cross> crosses = laneLink.getCrosses();
-            crosses.sort(Comparator.comparing(Cross::getDistanceOnLane0));
+            crosses.sort((o1, o2) -> {
+                double dis1 = o1.getDistanceByLane(laneLink);
+                double dis2 = o2.getDistanceByLane(laneLink);
+                return Double.compare(dis1, dis2);
+            });
         }
     }
 
@@ -138,7 +143,9 @@ public class Intersection {
     }
 
     public void reset() {
-        trafficLight.reset();
+        if (!isVirtual) {
+            trafficLight.reset();
+        }
         for (RoadLink roadLink : roadLinks) {
             roadLink.reset();
         }
