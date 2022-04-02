@@ -142,39 +142,38 @@ public class Engine {
     private boolean loadConfig(String configFile) throws IOException {
         String json = readJsonData(configFile);
         JSONObject configValues = JSONObject.parseObject(json);
-            interval = getDoubleFromJsonObject(configValues, "interval");
-            warnings = true;
-            rlTrafficLight = getBooleanFromJsonObject(configValues, "rlTrafficLight");
-            laneChange = getBooleanFromJsonObject(configValues, "laneChange");
-            seed = getIntFromJsonObject(configValues, "seed");
-            rnd.setSeed(seed);
-            dir = getStringFromJsonObject(configValues, "dir");
-            try {
-                String jsonRouteType = getStringFromJsonObject(configValues, "routeType");
-                routerType = typeNameMap.get(jsonRouteType);
-            } catch (JsonMemberMiss jsonMemberMiss) {
-                routerType = RouterType.LENGTH;
-                jsonMemberMiss.printStackTrace();
-            }
-            String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
-            String flowFile = getStringFromJsonObject(configValues, "flowFile");
-            if (!loadRoadNet(dir + roadNetFile)) {
-                System.out.println("load roadNet error");
-                return false;
-            }
-            if (!loadFlow(dir + flowFile)) {
-                System.out.println("load flow error");
-                return false;
-            }
-            if (warnings) {
-                checkWarning();
-            }
-            saveReplay = isSaveReplayInConfig = getBooleanFromJsonObject(configValues, "saveReplay");
-            if (saveReplay) {
-                String roadNetLogFile = getStringFromJsonObject(configValues, "roadnetLogFile");
-                String replayLogFile = getStringFromJsonObject(configValues, "replayLogFile");
-                setLogFile(dir + roadNetLogFile, dir + replayLogFile);
-            }
+        interval = getDoubleFromJsonObject(configValues, "interval");
+        warnings = false;
+        rlTrafficLight = getBooleanFromJsonObject(configValues, "rlTrafficLight");
+        laneChange = getBooleanFromJsonObject(configValues, "laneChange");
+        seed = getIntFromJsonObject(configValues, "seed");
+        rnd.setSeed(seed);
+        dir = getStringFromJsonObject(configValues, "dir");
+        try {
+            String jsonRouteType = getStringFromJsonObject(configValues, "routeType");
+            routerType = typeNameMap.get(jsonRouteType);
+        } catch (JsonMemberMiss jsonMemberMiss) {
+            routerType = RouterType.LENGTH;
+        }
+        String roadNetFile = getStringFromJsonObject(configValues, "roadnetFile");
+        String flowFile = getStringFromJsonObject(configValues, "flowFile");
+        if (!loadRoadNet(dir + roadNetFile)) {
+            System.err.println("load roadNet error");
+            return false;
+        }
+        if (!loadFlow(dir + flowFile)) {
+            System.err.println("load flow error");
+            return false;
+        }
+        saveReplay = isSaveReplayInConfig = getBooleanFromJsonObject(configValues, "saveReplay");
+        if (saveReplay) {
+            String roadNetLogFile = getStringFromJsonObject(configValues, "roadnetLogFile");
+            String replayLogFile = getStringFromJsonObject(configValues, "replayLogFile");
+            setLogFile(dir + roadNetLogFile, dir + replayLogFile);
+        }
+        if (warnings) {
+            checkWarning();
+        }
         return true;
     }
 
@@ -363,7 +362,7 @@ public class Engine {
         }
         for (Drivable drivable : roadNet.getDrivables()) { // can be improved
             if (drivable.getVehicles().size() != 0) {
-                drivable.getVehicles().getFirst().updateLeaderAndGap(null);
+                drivable.getVehicles().get(0).updateLeaderAndGap(null);
             }
         }
         laneChangeNotifyBuffer.clear();
@@ -522,9 +521,9 @@ public class Engine {
         threadRoadPool = new ArrayList<>();
         threadIntersectionPool = new ArrayList<>();
         threadDrivablePool = new ArrayList<>();
-        pushBuffer = new LinkedList<>();
-        VehicleRemoveBuffer = new LinkedList<>();
-        laneChangeNotifyBuffer = new LinkedList<>();
+        pushBuffer = new ArrayList<>();
+        VehicleRemoveBuffer = new ArrayList<>();
+        laneChangeNotifyBuffer = new ArrayList<>();
         threadPool = new ArrayList<>();
         rnd = new Random();
         roadNet = new RoadNet();
@@ -841,7 +840,7 @@ public class Engine {
     }
 
     private List<Vehicle> getRunningVehicle(boolean includeWaiting) {
-        List<Vehicle> ret = new LinkedList<>();
+        List<Vehicle> ret = new ArrayList<>();
         for (int key : vehiclePool.keySet()) {
             Vehicle vehicle = vehiclePool.get(key).getKey();
             if ((includeWaiting || vehicle.isCurRunning()) && vehicle.isReal()) {
