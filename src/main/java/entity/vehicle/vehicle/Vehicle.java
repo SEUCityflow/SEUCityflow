@@ -292,13 +292,13 @@ public class Vehicle {
     public double getCarFollowSpeed(double interval) {
         Vehicle leader = getCurLeader();
         if (leader == null) {  // 没有前车
-            return hasSetCustomSpeed() ? buffer.customSpeed : vehicleInfo.maxSpeed;  // 习惯速度/上限速度
+            return hasSetCustomSpeed() ? buffer.customSpeed : vehicleInfo.maxSpeed;  // API 设定的速度/上限速度
         }
 
         double v = getNoCollisionSpeed(leader.getSpeed(), leader.getMaxNegAcc(), vehicleInfo.speed, vehicleInfo.maxNegAcc, controllerInfo.getGap(), interval, 0); // 极端情况下制动无碰撞
 
         if (hasSetCustomSpeed()) {
-            return Math.min(buffer.customSpeed, v); // 有习惯速度则以习惯速度
+            return Math.min(buffer.customSpeed, v);
         }
         double assumeDecel = 0, leaderSpeed = leader.getSpeed(); // 速度差
         if (vehicleInfo.speed > leaderSpeed) {
@@ -358,8 +358,12 @@ public class Vehicle {
     }
 
     // 未到 cross 且能在 yield 范围前停住或已过 cross 且不覆盖 cross
-    public boolean canYield(double dist, double yieldDistance) {
-        return (dist > 0 && getMinBrakeDistance() < dist - yieldDistance) || (dist < 0 && dist + vehicleInfo.len < 0);
+//    public boolean canYield(double dist, double yieldDistance) {
+//        return (dist > 0 && getMinBrakeDistance() < dist - yieldDistance) || (dist < 0 && dist + vehicleInfo.len < 0);
+//    }
+    public boolean canYield(double dist)  {
+        return (dist > 0 && getMinBrakeDistance() < dist - vehicleInfo.yieldDistance) ||
+                (dist < 0 && dist + vehicleInfo.len < 0);
     }
 
     // 是否已在 intersection 或将进入 intersection
@@ -430,12 +434,7 @@ public class Vehicle {
             if (distanceOnLaneLink < distanceToLaneLinkStart)        // 车头已过此 cross，说明先前已对当前 cross 进行了 canPass 判断，无需再考虑
                 continue;
             if (!cross.canPass(this, laneLink, distanceToLaneLinkStart)) { // 当前不可通过
-                double dist = distanceOnLaneLink - distanceToLaneLinkStart - cross.getYieldDistance(this, laneLink);
-                if (dist < getMinBrakeDistance()) {
-                    v -= getMaxNegAcc() * interval;
-                } else {
-                    v = Math.min(v, getStopBeforeSpeed(dist, interval));
-                }
+                v = Math.min(v, getStopBeforeSpeed(distanceOnLaneLink - distanceToLaneLinkStart - vehicleInfo.yieldDistance, interval));
                 setBlocker(cross.getFoeVehicle(laneLink));      // 被 block
                 break;
             }
