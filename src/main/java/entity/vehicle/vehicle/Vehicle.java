@@ -136,13 +136,8 @@ public class Vehicle {
         }
     }
 
-    // 如 drivable 改变则返回新的 drivable
-    public boolean isDrivableSet() {
-        return buffer.isDrivableSet;
-    }
-
     public Drivable getChangedDrivable() {
-        if (!buffer.isDrivableSet) {
+        if (!buffer.isDrivableSet()) {
             return null;
         }
         return buffer.drivable;
