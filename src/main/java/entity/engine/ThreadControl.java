@@ -2,7 +2,6 @@ package entity.engine;
 
 import entity.roadNet.roadNet.*;
 import entity.vehicle.router.Router;
-import entity.vehicle.router.RouterType;
 import entity.vehicle.vehicle.Vehicle;
 import util.Pair;
 import util.Barrier;
@@ -101,7 +100,6 @@ class ThreadControl implements Runnable {
                 boolean isEdit = false;
                 List<Cross> crosses = laneLink.getCrosses();
                 ListIterator<Cross> crossIterator = crosses.listIterator(crosses.size());
-                int cnt = 0;
                 // first check the vehicle on the end lane
                 Vehicle vehicle = laneLink.getEndLane().getLastVehicle();
                 if (vehicle != null && vehicle.getPrevDrivable() == laneLink) {
@@ -128,7 +126,6 @@ class ThreadControl implements Runnable {
                         if (vehDistance > crossDistance) { // vehicle 已过 cross
                             if (vehDistance - crossDistance - linkVehicle.getLen() <= cross_now.getLeaveDistance()) {
                                 isEdit = true;
-                                cnt++;
                                 cross_now.notify(laneLink, linkVehicle, crossDistance - vehDistance);
                             } else {
                                 crossIterator.next();
@@ -136,7 +133,6 @@ class ThreadControl implements Runnable {
                             }
                         } else { // vehicle未过cross
                             isEdit = true;
-                            cnt++;
                             cross_now.notify(laneLink, linkVehicle, crossDistance - vehDistance);
                         }
                     }
@@ -182,7 +178,7 @@ class ThreadControl implements Runnable {
             ListIterator<Vehicle> vehicleListIterator = drivable.getVehicles().listIterator();
             while (vehicleListIterator.hasNext()) {
                 Vehicle vehicle = vehicleListIterator.next();
-                if (vehicle.getChangedDrivable() != null || vehicle.hasSetEnd()) { // 该车已移动到下一个 drivable 或 finishChange 或 abortChange
+                if (vehicle.hasSetDrivable() || vehicle.hasSetEnd()) { // 该车已移动到下一个 drivable 或 finishChange 或 abortChange
                     vehicleListIterator.remove();
                 }
                 if (vehicle.hasSetEnd()) { // 已跑完 route 或 vehicle.finishChange 或 shadow.abortChange，此时 vehicle 将被 delete
@@ -235,6 +231,7 @@ class ThreadControl implements Runnable {
                     Pair<Road, Integer> start = route.get(1);
                     route.subList(2, route.size()).clear();
                     if (!router.dijkstra(start.getKey(), anchorPoints.get(pos), route, pos)) {
+                        vehicle.setRouteValid(false);
                         vehicle.getFlow().setValid(false);
                         System.err.println("Invalid route '" + vehicle.getFlow().getId() + ", the car will end earlier than schedule.");
                         System.err.println();
@@ -246,8 +243,10 @@ class ThreadControl implements Runnable {
             while (router.routeTooShort() && !router.isEnd()) {
                 Pair<Road, Integer> start = router.getNowAnchorPoint();
                 if (!router.dijkstra(start.getKey(), router.getAnchorPoints().get(start.getValue() + 1), route, start.getValue() + 1)) {
+                    vehicle.setRouteValid(false);
                     vehicle.getFlow().setValid(false);
                     System.err.println("Invalid route '" + vehicle.getFlow().getId() + ", the car will end earlier than schedule.");
+                    break;
                 }
                 router.getPlanned().clear();
                 router.setNowAnchorPoint(new Pair<>(router.getAnchorPoints().get(start.getValue() + 1), start.getValue() + 1));
