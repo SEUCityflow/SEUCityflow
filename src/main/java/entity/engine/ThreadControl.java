@@ -98,9 +98,10 @@ class ThreadControl implements Runnable {
                 if (laneLink.getVehicles().size() == 0 && !laneLink.isAvailable()) {
                     continue;
                 }
-                activateLaneLinks.add(laneLink);
+                boolean isEdit = false;
                 List<Cross> crosses = laneLink.getCrosses();
                 ListIterator<Cross> crossIterator = crosses.listIterator(crosses.size());
+                int cnt = 0;
                 // first check the vehicle on the end lane
                 Vehicle vehicle = laneLink.getEndLane().getLastVehicle();
                 if (vehicle != null && vehicle.getPrevDrivable() == laneLink) {
@@ -110,39 +111,51 @@ class ThreadControl implements Runnable {
                         double crossDistance = laneLink.getLength() - cross_now.getDistanceByLane(laneLink);
                         // cross 距 laneLink 终点
                         if (crossDistance + vehDistance < cross_now.getLeaveDistance()) {
+                            isEdit = true;
                             cross_now.notify(laneLink, vehicle, -(vehicle.getCurDis() + crossDistance));
                         } else {
+                            crossIterator.next();
                             break;
                         }
                     }
                 }
                 // check each vehicle on laneLink
                 for (Vehicle linkVehicle : laneLink.getVehicles()) {
-                    double vehDistance = linkVehicle.getCurDis();//problem
+                    double vehDistance = linkVehicle.getCurDis();
                     while (crossIterator.hasPrevious()) {
                         Cross cross_now = crossIterator.previous();
                         double crossDistance = cross_now.getDistanceByLane(laneLink);
                         if (vehDistance > crossDistance) { // vehicle 已过 cross
                             if (vehDistance - crossDistance - linkVehicle.getLen() <= cross_now.getLeaveDistance()) {
+                                isEdit = true;
+                                cnt++;
                                 cross_now.notify(laneLink, linkVehicle, crossDistance - vehDistance);
                             } else {
+                                crossIterator.next();
                                 break;
                             }
                         } else { // vehicle未过cross
+                            isEdit = true;
+                            cnt++;
                             cross_now.notify(laneLink, linkVehicle, crossDistance - vehDistance);
                         }
                     }
                 }
                 // check vehicle on the incoming lane（laneLink 上车已经检查完成但仍有 cross 未 notify）
-                if (!laneLink.isAvailable()) {
-                    continue;
-                }
-                vehicle = laneLink.getStartLane().getFirstVehicle();
-                if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
-                    double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
-                    while (crossIterator.hasPrevious()) {
-                        crossIterator.previous().notify(laneLink, vehicle, vehDistance);
+                if (laneLink.isAvailable()) {
+                    vehicle = laneLink.getStartLane().getFirstVehicle();
+                    if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
+                        double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
+                        while (crossIterator.hasPrevious()) {
+                            Cross cross_now = crossIterator.previous();
+                            double crossDistance = cross_now.getDistanceByLane(laneLink);
+                            isEdit = true;
+                            cross_now.notify(laneLink, vehicle, crossDistance + vehDistance);
+                        }
                     }
+                }
+                if (isEdit) {
+                    activateLaneLinks.add(laneLink);
                 }
             }
         }
@@ -151,7 +164,7 @@ class ThreadControl implements Runnable {
 
     private void threadGetAction() {
         startBarrier.Wait();
-        List<Pair<Vehicle, Double>> buffer = new LinkedList<>();
+        List<Pair<Vehicle, Double>> buffer = new ArrayList<>();
         for (Vehicle vehicle : vehicles) {
             if (vehicle.isCurRunning() && vehicle.getGroupLeader() == null) {
                 engine.vehicleControl(vehicle, buffer, dynamicVehiclesEnterLane); //计算 speed、dis等信息
