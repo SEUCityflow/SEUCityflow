@@ -22,7 +22,7 @@ public class SimpleLaneChange extends LaneChange {
         signalSend = new Signal();
         signalSend.setSource(vehicle);
         Lane curLane = vehicle.getCurLane();
-        if (curLane.getLength() - vehicle.getCurDis() < 30) {
+        if (curLane.getLength() - vehicle.getCurDis() < 30 || vehicle.getCurLeader() == null) {
             return;
         }
         double curEst = vehicle.getGap();
