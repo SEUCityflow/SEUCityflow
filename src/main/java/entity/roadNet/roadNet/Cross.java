@@ -2,8 +2,6 @@ package entity.roadNet.roadNet;
 
 import entity.vehicle.vehicle.Vehicle;
 
-import java.util.Arrays;
-
 public class Cross {
     private final LaneLink[] laneLinks;
     private final Vehicle[] notifyVehicles;
@@ -35,45 +33,69 @@ public class Cross {
         RoadLinkType t1 = laneLinks[i].getRoadLinkType();
         RoadLinkType t2 = laneLinks[1 - i].getRoadLinkType();
         double d1 = distanceOnLane[i] - distanceToLaneLinkStart;
-        double d2 = distanceOnLane[1 - i];
+        double d2 = notifyDistances[1 - i];
 
-        // 无 foe 或 foe 已完全通过或 foe 死锁无法移动
-        if (foeVehicle == null || d2 + foeVehicle.getLen() < 0 || foeVehicle.hasDeadlock()) {
-            return true;
-        }
-        double yieldDistanceD1 = getYieldDistance(vehicle, foeVehicle);
-        double yieldDistanceD2 = getYieldDistance(foeVehicle, vehicle);
-        boolean canYieldD1 = vehicle.canYield(d1, yieldDistanceD1);
-        boolean canYieldD2 = foeVehicle.canYield(d2, yieldDistanceD2);
-        boolean canPass = false;
-        if (canYieldD1 && !canYieldD2) {
-            return false;
-        } else if (!canYieldD1 && canYieldD2) {
-            return true;
-        } else {
-            int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
-            int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
-            if (reachSteps < foeVehicleReachSteps) { // 自己早到
-                canPass = true;
-            } else if (reachSteps > foeVehicleReachSteps) { // 自己晚到
-                canPass = t1.ordinal() > t2.ordinal(); // 交通规则优势
-            } else { // 同时到
-                if (t1.ordinal() > t2.ordinal()) { // 交通规则优势
-                    canPass = true;
-                } else if (t1.ordinal() == t2.ordinal()) { // 同优势
-                    if (vehicle.getEnterLaneLinkTime() == foeVehicle.getBufferEnterLaneLinkTime()) { // 同时进路口
-                        if (d1 == d2) { // 同距离
-                            canPass = vehicle.getPriority() > foeVehicle.getPriority(); // 优先级
-                        } else {
-                            canPass = d1 < d2;
-                        }
-                    } else {
-                        canPass = vehicle.getBufferEnterLaneLinkTime() < foeVehicle.getEnterLaneLinkTime();
+        if (foeVehicle == null) return true;
+
+        if (!vehicle.canYield(d1)) return true;
+
+        int yield = 0;
+        if (!foeVehicle.canYield(d2)) yield = 1;
+        if (yield == 0) {
+            if (t1.ordinal() > t2.ordinal()) {
+                yield = -1;
+            } else if (t1.ordinal() < t2.ordinal()) {
+                if (d2 > 0) {
+                    // todo: can be improved, check if higher priority vehicle is blocked by other vehicles, hard!
+                    int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
+                    int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
+                    if (foeVehicleReachSteps > reachSteps) {
+                        yield = -1;
                     }
+                } else {
+                    if (d2 + foeVehicle.getLen() < 0) {
+                        yield = -1;
+                    }
+                }
+                if (yield == 0) yield = 1;
+            } else {
+                if (d2 > 0) {
+                    int foeVehicleReachSteps = foeVehicle.getReachStepsOnLaneLink(d2, laneLinks[1 - i]);
+                    int reachSteps = vehicle.getReachStepsOnLaneLink(d1, laneLinks[i]);
+                    if (foeVehicleReachSteps > reachSteps) {
+                        yield = -1;
+                    } else if (foeVehicleReachSteps < reachSteps) {
+                        yield = 1;
+                    } else {
+                        if (vehicle.getEnterLaneLinkTime() == foeVehicle.getEnterLaneLinkTime()) {
+                            if (d1 == d2) {
+                                yield = vehicle.getPriority() > foeVehicle.getPriority() ? -1 : 1;
+                            } else {
+                                yield = d1 < d2 ? -1 : 1;
+                            }
+                        } else {
+                            yield = vehicle.getEnterLaneLinkTime() < foeVehicle.getEnterLaneLinkTime() ? -1 : 1;
+                        }
+                    }
+                } else {
+                    yield = d2 + foeVehicle.getLen() < 0 ? -1 : 1;
                 }
             }
         }
-        return canPass;
+        if (yield == 1) {
+            Vehicle fastPointer = foeVehicle;
+            Vehicle slowPointer = foeVehicle;
+            while (fastPointer != null && fastPointer.getCurBlocker() != null) {
+                slowPointer = slowPointer.getCurBlocker();
+                fastPointer = fastPointer.getCurBlocker().getCurBlocker();
+                if (slowPointer == fastPointer) {
+                    // deadlock detected
+                    yield = -1;
+                    break;
+                }
+            }
+        }
+        return yield == -1;
     }
 
     public double getYieldDistance(Vehicle vehicle, Vehicle foeVehicle) {
@@ -132,7 +154,7 @@ public class Cross {
     }
 
     public void setDistanceOnLane(double d1, double d2) {
-        distanceOnLane[0] = d2;
+        distanceOnLane[0] = d1;
         distanceOnLane[1] = d2;
     }
 
@@ -147,10 +169,6 @@ public class Cross {
     public void setSafeDistances(double d1, double d2) {
         safeDistances[0] = d1;
         safeDistances[1] = d2;
-    }
-
-    public double getDistanceOnLane0() {
-        return distanceOnLane[0];
     }
 
     public double getLeaveDistance() {
