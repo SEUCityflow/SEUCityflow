@@ -13,6 +13,10 @@ public class engine { // 供 python 调用
         eng = new Engine(configFile, threadNum);
     }
 
+    public int get_finished_vehicle_count() {
+        return eng.getFinishedVehicleCnt();
+    }
+
     public void next_step() {
         eng.nextStep();
     }
@@ -31,6 +35,10 @@ public class engine { // 供 python 调用
 
     public String get_lane_waiting_vehicle_count() {
         return JSON.toJSONString(eng.getLaneWaitingVehicleCount());
+    }
+
+    public String get_lane_vehicle_count() {
+        return JSON.toJSONString(eng.getLaneVehicleCount());
     }
 
     public String get_lane_vehicles() {
@@ -57,7 +65,7 @@ public class engine { // 供 python 调用
         return (float) eng.getCurrentTime();
     }
 
-    public float getAverageTravelTime() {
+    public float get_average_travel_time() {
         return (float) eng.getAverageTravelTime();
     }
 
@@ -85,6 +93,10 @@ public class engine { // 供 python 调用
         eng.pushVehicle(info, JSON.parseArray(roads, String.class));
     }
 
+    public boolean set_vehicle_route(String vehicleId, String anchorId) {
+        return eng.setRoute(vehicleId, JSON.parseArray(anchorId, String.class));
+    }
+
     public void reset() {
         eng.reset(false);
     }
@@ -101,15 +113,27 @@ public class engine { // 供 python 调用
         return eng.snapshot();
     }
 
-    public void loadFromFile(String fileName) throws FileNotFoundException {
+    public Archive load_archive_from_file(String fileName) throws FileNotFoundException {
+        return eng.loadArchiveFromFile(fileName);
+    }
+
+    public void save_archive_to_file(Archive archive, String fileName) throws IOException {
+        eng.saveArchiveToFile(archive, fileName);
+    }
+
+    public void load_from_file(String fileName) throws FileNotFoundException {
         eng.loadFromFile(fileName);
     }
 
-    public boolean set_vehicle_route(String vehicleId, String anchorId) {
-        return eng.setRoute(vehicleId, JSON.parseArray(anchorId, String.class));
+    public void save_to_file(String fileName) throws IOException {
+        eng.saveToFile(fileName);
     }
 
     public void close() {
         eng.close();
+    }
+
+    public Engine getEng() {
+        return eng;
     }
 }
