@@ -59,7 +59,7 @@ public class Road {
     public Road() {
         lanes = new ArrayList<>();
         points = new ArrayList<>();
-        planRouteBuffer = new LinkedList<>();
+        planRouteBuffer = new ArrayList<>();
     }
 
     public void buildSegmentationByInterval(double interval) {
