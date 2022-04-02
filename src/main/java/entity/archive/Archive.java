@@ -178,6 +178,7 @@ public class Archive {
             vehicle.setPriority(archive.getPriority());
             vehicle.setId(archive.getId());
             vehicle.setEnterTime(archive.getEnterTime());
+            vehicle.setFlow(engine.getFlowMap().get(archive.getFlowId()));
             vehicle.setEngine(engine);
             vehiclePool.put(vehicle.getPriority(), new Pair<>(vehicle, rnd.nextInt(engine.getThreadNum())));
             vehicleMap.put(vehicle.getId(), vehicle);
@@ -319,6 +320,7 @@ public class Archive {
         vehicleArchive.setPriority(vehicle.getPriority());
         vehicleArchive.setId(vehicle.getId());
         vehicleArchive.setEnterTime(vehicle.getEnterTime());
+        vehicleArchive.setFlowId(vehicle.getFlow().getId());
         // vehicleInfo
         VehicleInfoArchive vehicleInfoArchive = vehicleArchive.getVehicleInfoArchive();
         VehicleInfo vehicleInfo = vehicle.getVehicleInfo();

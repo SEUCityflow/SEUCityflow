@@ -442,13 +442,15 @@ public class VehicleArchive {
     private String id;
     @JSONField(name = "enterTime", ordinal = 3)
     private double enterTime;
-    @JSONField(name = "vehicleInfoArchive", ordinal = 4)
+    @JSONField(name = "flowId", ordinal = 4)
+    private String flowId;
+    @JSONField(name = "vehicleInfoArchive", ordinal = 5)
     private VehicleInfoArchive vehicleInfoArchive;
-    @JSONField(name = "controllerInfoArchive", ordinal = 5)
+    @JSONField(name = "controllerInfoArchive", ordinal = 6)
     private ControllerInfoArchive controllerInfoArchive;
-    @JSONField(name = "laneChangeInfoArchive", ordinal = 6)
+    @JSONField(name = "laneChangeInfoArchive", ordinal = 7)
     private LaneChangeInfoArchive laneChangeInfoArchive;
-    @JSONField(name = "laneChangeArchive", ordinal = 7)
+    @JSONField(name = "laneChangeArchive", ordinal = 8)
     private LaneChangeArchive laneChangeArchive;
 
     public VehicleArchive() {
@@ -512,5 +514,13 @@ public class VehicleArchive {
 
     public void setEnterTime(double enterTime) {
         this.enterTime = enterTime;
+    }
+
+    public String getFlowId() {
+        return flowId;
+    }
+
+    public void setFlowId(String flowId) {
+        this.flowId = flowId;
     }
 }
