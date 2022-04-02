@@ -41,13 +41,13 @@ public class Router {
     // flow
     public Router(Vehicle vehicle, Route route, Random rnd, RouterType routerType) {
         this.vehicle = vehicle;
-        this.route = new ArrayList<>();
+        this.route = new LinkedList<>();
         this.anchorPoints = route.getRoute();
         this.rnd = rnd;
         this.type = routerType;
         assert (this.anchorPoints.size() > 0);
         this.iCurRoad = this.route.listIterator();
-        planned = new LinkedList<>();
+        planned = new ArrayList<>();
     }
 
     private int selectLaneIndex(Lane curLane, List<Lane> lanes) {
