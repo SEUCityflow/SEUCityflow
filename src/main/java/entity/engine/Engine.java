@@ -204,10 +204,6 @@ public class Engine {
         } else {
             nextSpeed = vehicle.getNextSpeed(interval);//在多条件下计算速度
         }
-        if (nextSpeed < 0) {
-            nextSpeed = 0;
-        }
-        vehicle.setBufferSpeed(nextSpeed);
         if (laneChange) {
             Vehicle partner = vehicle.getPartner();
             if (partner != null && !partner.hasSetSpeed()) { // 有 partner 且尚未进行 vehicleControl，在此同步速度
@@ -219,6 +215,10 @@ public class Engine {
                 }
             }
         }
+        if (nextSpeed < 0) {
+            nextSpeed = 0;
+        }
+        vehicle.setBufferSpeed(nextSpeed);
         return nextSpeed;
     }
 
@@ -260,7 +260,7 @@ public class Engine {
         if (!vehicle.hasSetEnd() && vehicle.hasSetDrivable()) {// 发生 drivable 变动且此时尚未到达 end
             Pair<Vehicle, Double> pair = new Pair<>(vehicle, vehicle.getBufferDis());
             buffer.add(pair);
-            if (vehicle.getBufferDrivable().isLane() && vehicle.getCurRouter().getType() == RouterType.DYNAMIC) {
+            if (vehicle.getBufferDrivable().isLane() && vehicle.getCurRouter().getType() == RouterType.DYNAMIC && vehicle.isRouteValid()) {
                 buffer2.add(vehicle);
             }
         }
@@ -289,6 +289,7 @@ public class Engine {
                     }
                     vehicle1.setBufferSpeed(nextSpeed);
                     vehicle1.setDeltaDistance(deltaDis);
+                    checkDrivableChange(vehicle1, buffer1, buffer2);
                 }
             }
         }
