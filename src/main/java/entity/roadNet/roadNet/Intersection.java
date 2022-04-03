@@ -38,10 +38,19 @@ public class Intersection {
             for (int j = 0; j + 1 < p2.size(); j++) {
                 Point B1 = p2.get(j);
                 Point B2 = p2.get(j + 1);
+                Point p = null;
                 if (Util.sign(Point.crossMultiply(A2.minus(A1), B2.minus(B1))) == 0) { // 平行
-                    continue;
+                    if (Point.onSegment(A1, A2, B1)) {
+                        p = new Point(B1);
+                    } else if (Point.onSegment(B1, B2, A1)) {
+                        p = new Point(A1);
+                    } else {
+                        continue;
+                    }
                 }
-                Point p = Point.calcIntersectionPoint(A1, A2, B1, B2);
+                if (p == null) {
+                    p = Point.calcIntersectionPoint(A1, A2, B1, B2);
+                }
                 if (Point.onSegment(A1, A2, p) && Point.onSegment(B1, B2, p)) { // 相交
                     Cross cross = new Cross();
                     cross.setLaneLinks(laneLink1, laneLink2);
