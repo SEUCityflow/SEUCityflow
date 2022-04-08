@@ -113,14 +113,6 @@ public class engine { // 供 python 调用
         return eng.snapshot();
     }
 
-    public Archive load_archive_from_file(String fileName) throws FileNotFoundException {
-        return eng.loadArchiveFromFile(fileName);
-    }
-
-    public void save_archive_to_file(Archive archive, String fileName) throws IOException {
-        eng.saveArchiveToFile(archive, fileName);
-    }
-
     public void load_from_file(String fileName) throws FileNotFoundException {
         eng.loadFromFile(fileName);
     }

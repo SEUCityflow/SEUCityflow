@@ -1,6 +1,5 @@
 import entity.archive.Archive;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class archive {
@@ -12,10 +11,6 @@ public class archive {
 
     public archive(engine eng) {
         archive = new Archive(eng.getEng());
-    }
-
-    public archive load(engine eng, String fileName) throws FileNotFoundException {
-        return new archive(Archive.load(eng.getEng(), fileName));
     }
 
     public void dump(String fileName) throws IOException {
