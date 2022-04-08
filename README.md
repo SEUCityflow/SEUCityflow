@@ -17,12 +17,12 @@
 3.下载 SEUCityflow-x.x.x.jar 与 lib.zip，解压 zip 并置于所用文件夹下
 
 4.python 调用方法
-```
+``` python
 import jpype
 from jpype.types import *
 import json
 if not jpype.isJVMStarted():
-    jpype.startJVM(classpath=['/your/path/to/lib/*', '/your/path/to/SEUCityflow-0.6.1.jar'], convertStrings=True)
+    jpype.startJVM(jvmargs, classpath=['/your/path/to/lib/*', '/your/path/to/SEUCityflow-x.x.x.jar'], convertStrings=True) #jvmargs 根据实际数据设定
 Engine = jpype.JClass('engine')
 engine = Engine("/your/path/to/configFile.json", threadNumber)
 ```
@@ -51,12 +51,6 @@ engine = Engine("/your/path/to/configFile.json", threadNumber)
 ```
 vehicleNameList = json.loads(engine.get_vehicles(include_waiting=False))
 ```
-**注：**
-对返回值类型为 double 的方法，需用 float() 进行类型转化，如：
-```
-time = float(engine.get_current_time())
-```
-
 
 **Simulation**
 
@@ -71,6 +65,11 @@ engine.next_step()
 get_vehicle_count()
 ```
 - Get number of total running vehicles.
+- Return an **int**
+```
+get_finished_vehicle_count()
+```
+- Get number of total finished vehicles.
 - Return an **int**
 ```
 get_vehicles(include_waiting=False)
@@ -165,10 +164,16 @@ load(archive)
 load_from_file(path)
 ```
 - Load a snapshot file created by dump method and restore simulation state.
-- The whole process of saving and loading file is like:
+```
+save_to_file(path)
+```
+- save now simulation state to file
+
+The whole process of saving and loading file is like:
 ```
 archive = eng.snapshot() # create an archive object
 archive.dump("save.json") # if you want to save the snapshot to a file
+# or just use eng.save_to_file("save.json")
 
 # do something
 
