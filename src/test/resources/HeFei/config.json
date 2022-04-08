@@ -1,0 +1,13 @@
+{
+  "interval": 1,
+  "seed": 42,
+  "dir": "src/test/resources/new/",
+  "roadnetFile": "roadnet_32_19.json",
+  "flowFile": "all_flow.json",
+  "rlTrafficLight": false,
+  "laneChange": true,
+  "saveReplay": true,
+  "routeType": "LENGTH",
+  "roadnetLogFile": "roadnet.json",
+  "replayLogFile": "replay_LaneChange.txt"
+}
