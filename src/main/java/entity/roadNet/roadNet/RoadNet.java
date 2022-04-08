@@ -243,10 +243,10 @@ public class RoadNet {
             if (laneLinkPoints == null) {
                 laneLinkPoints = calLaneLinkPoints(laneLink.getStartLane(), laneLink.getEndLane());
             }
-            List<Point> startLanePoints = laneLink.getStartLane().getPoints();
-            List<Point> endLanePoints = laneLink.getEndLane().getPoints();
-            laneLinkPoints.add(0, startLanePoints.get(startLanePoints.size() - 1));
-            laneLinkPoints.add(endLanePoints.get(0));
+//            List<Point> startLanePoints = laneLink.getStartLane().getPoints();
+//            List<Point> endLanePoints = laneLink.getEndLane().getPoints();
+//            laneLinkPoints.add(0, startLanePoints.get(startLanePoints.size() - 1));
+//            laneLinkPoints.add(endLanePoints.get(0));
             laneLink.setLength(getLengthOfPoints(laneLinkPoints));
         }
         for (Intersection intersection : intersections) {
