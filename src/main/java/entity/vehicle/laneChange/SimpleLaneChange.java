@@ -16,7 +16,7 @@ public class SimpleLaneChange extends LaneChange {
     }
 
     public void makeSignal(double interval) {
-        if (changing || vehicle.getEngine().getCurrentTime() - lastChangeTime < coolingTime || vehicle.getCurDrivable().isLaneLink() || vehicle.isGrouped()) {
+        if (changing || vehicle.getEngine().getCurrentTime() - lastChangeTime < coolingTime || vehicle.getCurDrivable().isLaneLink()) {
             return;
         }
         signalSend = new Signal();
