@@ -44,16 +44,19 @@ public class Segment {
 
     public void buildGroup() {
         isGrouped = true;
-        Vehicle leader = vehicles.get(0);
+        Iterator<Vehicle> iterator = vehicles.iterator();
+        Vehicle leader = iterator.next();
         leader.setGroupLeader(null);
-        for (int i = 1; i < vehicles.size(); i++) {
-            vehicles.get(i).setGroupLeader(leader);
+        while (iterator.hasNext()) {
+            Vehicle vehicle = iterator.next();
+            vehicle.setGroupLeader(leader);
         }
     }
 
     public boolean canGroup() {
+        double lengthToEnd = belongLane.length - endPos;
         double averageSpeed = getAverageSpeed();
-        return index != belongLane.getSegmentNum() - 1 && averageSpeed != -1 && averageSpeed <= belongLane.getMaxSpeed() * Vehicle.Alpha;
+        return index != 0 && lengthToEnd >= 30 && vehicles.size() != 0 && averageSpeed <= belongLane.getMaxSpeed() * Vehicle.Alpha;
     }
 
     public double getStartPos() {
