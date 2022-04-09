@@ -94,9 +94,6 @@ class ThreadControl implements Runnable {
         activateLaneLinks.clear();
         for (Intersection intersection : intersections) {
             for (LaneLink laneLink : intersection.getLaneLinks()) {
-                if (laneLink.getVehicles().size() == 0 && !laneLink.isAvailable()) {
-                    continue;
-                }
                 boolean isEdit = false;
                 List<Cross> crosses = laneLink.getCrosses();
                 ListIterator<Cross> crossIterator = crosses.listIterator(crosses.size());
@@ -116,6 +113,12 @@ class ThreadControl implements Runnable {
                             break;
                         }
                     }
+                }
+                if (laneLink.getVehicles().size() == 0 && !laneLink.isAvailable()) {
+                    if (isEdit) {
+                        activateLaneLinks.add(laneLink);
+                    }
+                    continue;
                 }
                 // check each vehicle on laneLink
                 for (Vehicle linkVehicle : laneLink.getVehicles()) {
@@ -138,16 +141,14 @@ class ThreadControl implements Runnable {
                     }
                 }
                 // check vehicle on the incoming lane（laneLink 上车已经检查完成但仍有 cross 未 notify）
-                if (laneLink.isAvailable()) {
-                    vehicle = laneLink.getStartLane().getFirstVehicle();
-                    if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
-                        double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
-                        while (crossIterator.hasPrevious()) {
-                            Cross cross_now = crossIterator.previous();
-                            double crossDistance = cross_now.getDistanceByLane(laneLink);
-                            isEdit = true;
-                            cross_now.notify(laneLink, vehicle, crossDistance + vehDistance);
-                        }
+                vehicle = laneLink.getStartLane().getFirstVehicle();
+                if (vehicle != null && vehicle.getNextDrivable() == laneLink && laneLink.isAvailable()) {
+                    double vehDistance = laneLink.getStartLane().getLength() - vehicle.getCurDis();
+                    while (crossIterator.hasPrevious()) {
+                        Cross cross_now = crossIterator.previous();
+                        double crossDistance = cross_now.getDistanceByLane(laneLink);
+                        isEdit = true;
+                        cross_now.notify(laneLink, vehicle, crossDistance + vehDistance);
                     }
                 }
                 if (isEdit) {
