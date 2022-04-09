@@ -277,7 +277,7 @@ public class Engine {
                     if (vehicle == vehicle1) {
                         continue;
                     }
-                    calculateSpeed(vehicle1);
+                    nextSpeed = calculateSpeed(vehicle1);
                     calculateDistance(vehicle1, nextSpeed);
                     calculateOffset(vehicle1, nextSpeed);
                     checkDrivableChange(vehicle1, buffer1, buffer2);
@@ -289,6 +289,7 @@ public class Engine {
                     }
                     vehicle1.setBufferSpeed(nextSpeed);
                     vehicle1.setDeltaDistance(deltaDis);
+                    calculateOffset(vehicle1, nextSpeed);
                     checkDrivableChange(vehicle1, buffer1, buffer2);
                 }
             }
