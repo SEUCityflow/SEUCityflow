@@ -6,7 +6,7 @@
   "flowFile": "flow1.json",
   "rlTrafficLight": false,
   "laneChange": true,
-  "saveReplay": true,
+  "saveReplay": false,
   "routeType": "DYNAMIC",
   "roadnetLogFile": "roadnet.json",
   "replayLogFile": "replay_LaneChange.txt"

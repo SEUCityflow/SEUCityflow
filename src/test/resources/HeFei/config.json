@@ -1,12 +1,12 @@
 {
   "interval": 1,
   "seed": 42,
-  "dir": "src/test/resources/new/",
+  "dir": "src/test/resources/HeFei/",
   "roadnetFile": "roadnet_32_19.json",
   "flowFile": "all_flow.json",
   "rlTrafficLight": false,
   "laneChange": true,
-  "saveReplay": true,
+  "saveReplay": false,
   "routeType": "LENGTH",
   "roadnetLogFile": "roadnet.json",
   "replayLogFile": "replay_LaneChange.txt"
