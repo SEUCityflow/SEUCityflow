@@ -289,9 +289,7 @@ public class Vehicle {
         if (leader == null) {  // 没有前车
             return hasSetCustomSpeed() ? buffer.customSpeed : vehicleInfo.maxSpeed;  // API 设定的速度/上限速度
         }
-
         double v = getNoCollisionSpeed(leader.getSpeed(), leader.getMaxNegAcc(), vehicleInfo.speed, vehicleInfo.maxNegAcc, controllerInfo.getGap(), interval, 0); // 极端情况下制动无碰撞
-
         if (hasSetCustomSpeed()) {
             return Math.min(buffer.customSpeed, v);
         }
