@@ -18,8 +18,8 @@ public class Lane extends Drivable {
     private double historyAverageSpeed;
     private double sumQueueingTime;
     private double sumPeriodTime;
-    private static final int historyLen = 240;
-    private static final int carToBeCalculate = 120;
+    private static final int historyLen = 120;
+    private static final int carToBeCalculate = 100;
     private static final int periodSize = 6;
 
     public Lane() {
