@@ -113,7 +113,7 @@ public class Road {
         return lanes.size() == 0 ? 0 : sum / lanes.size();
     }
 
-    public double getAverageSpeed() {
+    public double getHistoryAverageSpeed() {
         int vehicleNum = 0;
         double speedSum = 0;
         for (Lane lane : lanes) {
@@ -124,7 +124,7 @@ public class Road {
     }
 
     public double getAverageDuration() {
-        double averageSpeed = getAverageSpeed();
+        double averageSpeed = getHistoryAverageSpeed();
         return averageSpeed < 0 ? -1 : getAverageLength() / averageSpeed;
     }
 
