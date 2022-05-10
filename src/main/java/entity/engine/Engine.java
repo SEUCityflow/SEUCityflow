@@ -249,8 +249,8 @@ public class Engine {
                     synchronized (this) {
                         vehicleMap.remove(vehicle.getPartner().getId());    // 清除 shadow 的映射
                         vehicleMap.put(vehicle.getId(), vehicle.getPartner()); // 完成 laneChange，自己成为 shadow
-                        vehicle.finishChanging();
                     }
+                    vehicle.finishChanging();
                 }
             }
         }
@@ -416,7 +416,7 @@ public class Engine {
         endBarrier.Wait();
     }
 
-    private void updateLog() throws IOException {
+    private StringBuilder updateLog() {
         StringBuilder stringBuilder = new StringBuilder();
         for (Vehicle vehicle : getRunningVehicle()) {
             Point pos = vehicle.getPoint();
@@ -447,7 +447,7 @@ public class Engine {
             stringBuilder.append(",");
         }
         stringBuilder.append("\n");
-        logOut.write(String.valueOf(stringBuilder));
+        return stringBuilder;
     }
 
     private void notifyCross() {
@@ -490,11 +490,14 @@ public class Engine {
             }
         }
         if (saveReplay) {
-            try {
-                updateLog(); // O(n), n = runningVehicle.size()
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            StringBuilder log = updateLog(); // O(n), n = runningVehicle.size()
+            threadExecutor.execute(() -> {
+                try {
+                    logOut.write(String.valueOf(log));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         }
         step += 1;
     }
@@ -533,6 +536,7 @@ public class Engine {
         this.threadNum = threadNum;
         startBarrier = new Barrier(this.threadNum + 1);
         endBarrier = new Barrier(this.threadNum + 1);
+        threadExecutor = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNum; i++) {
             threadVehiclePool.add(new HashSet<>());
             threadRoadPool.add(new ArrayList<>());
@@ -551,7 +555,6 @@ public class Engine {
         if (!success) {
             System.out.println("load config failed!");
         }
-        threadExecutor = Executors.newCachedThreadPool();
         for (int i = 0; i < threadNum; i++) {
             threadExecutor.execute(threadPool.get(i));
         }
