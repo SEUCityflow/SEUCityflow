@@ -35,12 +35,17 @@ public class Cross {
         double d1 = distanceOnLane[i] - distanceToLaneLinkStart;
         double d2 = notifyDistances[1 - i];
 
-        if (foeVehicle == null) return true;
-
-        if (!vehicle.canYield(d1)) return true;
+        if (foeVehicle == null) {
+            return true;
+        }
+        if (!vehicle.canYield(d1)) {
+            return true;
+        }
 
         int yield = 0;
-        if (!foeVehicle.canYield(d2)) yield = 1;
+        if (!foeVehicle.canYield(d2)) {
+            yield = 1;
+        }
         if (yield == 0) {
             if (t1.ordinal() > t2.ordinal()) {
                 yield = -1;
